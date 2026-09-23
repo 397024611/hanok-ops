@@ -1,4 +1,4 @@
-name: Build Hanok Ops APK
+name: Build 报告老板 Release APK
 
 on:
   push:
@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    env:
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      ANDROID_KEYSTORE_PATH: ../.signing/baogao-laoban-release.jks
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,16 +34,42 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
+      - name: Restore private signing key
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_B64"
+          test -n "$ANDROID_KEYSTORE_PASSWORD"
+          test -n "$ANDROID_KEY_ALIAS"
+          test -n "$ANDROID_KEY_PASSWORD"
+          mkdir -p android/.signing
+          printf '%s' "$ANDROID_KEYSTORE_B64" | base64 --decode > android/.signing/baogao-laoban-release.jks
+          chmod 600 android/.signing/baogao-laoban-release.jks
+
+      - name: Build signed release APK
         working-directory: android
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon clean assembleRelease
+
+      - name: Verify release signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          sha256sum "$APK" | tee Baogao-Laoban-Release.sha256
 
       - name: Rename APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk Hanok-Ops.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk Baogao-Laoban-Release.apk
 
-      - name: Upload APK
+      - name: Upload signed release
         uses: actions/upload-artifact@v4
         with:
-          name: Hanok-Ops-APK
-          path: Hanok-Ops.apk
+          name: Baogao-Laoban-Release
+          path: |
+            Baogao-Laoban-Release.apk
+            Baogao-Laoban-Release.sha256
           if-no-files-found: error
