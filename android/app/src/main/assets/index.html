@@ -24,6 +24,15 @@ function storeFor(id){return stores.find(s=>s.id===id)||{name:"Store",code:"OPS"
 function ticketId(t){const s=storeFor(t.store_id);return s.code+"-"+String(t.ticket_no||0).padStart(5,"0")}
 function personFor(id){return people.find(p=>p.user_id===id)||null}
 function authHeaders(extra={}){return {"apikey":SB_KEY,"Authorization":"Bearer "+session.access_token,...extra}}
+function syncNativeSession(){
+  if(!session||!window.AndroidApp||typeof window.AndroidApp.saveSession!=="function")return;
+  try{window.AndroidApp.saveSession(session.access_token||"",session.refresh_token||"")}catch{}
+}
+function hydrateNativeSession(){
+  if(!session||!window.AndroidApp||typeof window.AndroidApp.getStoredSession!=="function")return;
+  try{const raw=window.AndroidApp.getStoredSession(),native=raw?JSON.parse(raw):null;if(native?.access_token&&native?.refresh_token){session.access_token=native.access_token;session.refresh_token=native.refresh_token;localStorage.setItem("hanokops_session",JSON.stringify(session))}}catch{}
+}
+function clearNativeSession(){if(window.AndroidApp&&typeof window.AndroidApp.clearSession==="function"){try{window.AndroidApp.clearSession()}catch{}}}
 function loadLocalProjects(){try{projects=JSON.parse(localStorage.getItem("hanokops_projects")||"[]");if(!Array.isArray(projects))projects=[]}catch{projects=[]}}
 function saveLocalProjects(){localStorage.setItem("hanokops_projects",JSON.stringify(projects))}
 
@@ -42,7 +51,7 @@ async function api(path,opts={}){
 async function refreshSession(){
   try{
     const r=await fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:session.refresh_token})});
-    if(!r.ok)throw 0;session=await r.json();localStorage.setItem("hanokops_session",JSON.stringify(session));return true;
+    if(!r.ok)throw 0;session=await r.json();localStorage.setItem("hanokops_session",JSON.stringify(session));syncNativeSession();return true;
   }catch{logout(false);return false}
 }
 
@@ -52,7 +61,7 @@ async function signIn(){
   try{
     const r=await fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password})});
     const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.msg||j.message||"Sign in failed");
-    session=j;localStorage.setItem("hanokops_session",JSON.stringify(session));await boot();
+    session=j;localStorage.setItem("hanokops_session",JSON.stringify(session));syncNativeSession();await boot();
   }catch(e){err.textContent=e.message}finally{showLoading(false)}
 }
 async function signUp(){
@@ -66,10 +75,11 @@ async function signUp(){
     if(j.access_token){session=j;localStorage.setItem("hanokops_session",JSON.stringify(session));await boot()}else{toast("Account created. Check your email, then sign in.")}
   }catch(e){err.textContent=e.message}finally{showLoading(false)}
 }
-function logout(render=true){session=null;profile=null;stores=[];tickets=[];localStorage.removeItem("hanokops_session");clearInterval(refreshTimer);if(render)showLogin()}
+function logout(render=true){clearNativeSession();session=null;profile=null;stores=[];tickets=[];localStorage.removeItem("hanokops_session");clearInterval(refreshTimer);if(render)showLogin()}
 
 async function boot(){
   if(!session){showLogin();return}
+  hydrateNativeSession();syncNativeSession();
   showLoading(true);
   try{
     const ps=await api("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(session.user.id)+"&select=user_id,email,display_name,role,store_id");
