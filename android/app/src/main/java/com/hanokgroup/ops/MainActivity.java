@@ -162,7 +162,7 @@ public class MainActivity extends Activity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Hanok Ops Alerts",
+                    "报告老板 Alerts",
                     NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription("Urgent tickets, follow-ups, overdue items and store requests");
