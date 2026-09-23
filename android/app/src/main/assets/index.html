@@ -114,6 +114,28 @@ async function signIn(){
     session=j;localStorage.setItem("hanokops_session",JSON.stringify(session));syncNativeSession();await boot();
   }catch(e){err.textContent=e.message}finally{showLoading(false)}
 }
+async function forgotPassword(){
+  const email=(document.getElementById("email")?.value||"").trim();
+  const err=document.getElementById("loginErr");
+  if(!email){err.textContent="Enter your email first.";return}
+  err.style.color="#f0cb85";
+  err.textContent="Sending password reset email…";
+  try{
+    const redirect="https://meathouseskewer.com.au/hanok-reset";
+    const r=await fetch(SB_URL+"/auth/v1/recover?redirect_to="+encodeURIComponent(redirect),{
+      method:"POST",
+      headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({email})
+    });
+    let data={};try{data=await r.json()}catch{}
+    if(!r.ok)throw new Error(data?.msg||data?.message||data?.error_description||"Could not send reset email");
+    err.style.color="#a7e3bf";
+    err.textContent="If that email belongs to an account, a reset link has been sent. Check your inbox and spam folder.";
+  }catch(e){
+    err.style.color="#ff93a0";
+    err.textContent=e.message||"Could not send reset email.";
+  }
+}
 async function signUp(){
   const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
   const err=document.getElementById("loginErr");err.textContent="";
@@ -157,7 +179,7 @@ async function loadEvents(id){return await api("/rest/v1/ops_ticket_events?ticke
 async function loadComments(id){return await api("/rest/v1/ops_ticket_comments?ticket_id=eq."+id+"&select=id,author_id,body,created_at&order=created_at.asc")||[]}
 
 function showLogin(){
-  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.8.1</div></div>'
+  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="forgotPassword()">Forgot password</button><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.8.2</div></div>'
 }
 
 function nav(){const unread=notifications.filter(n=>!n.read_at).length;
