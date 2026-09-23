@@ -30,6 +30,7 @@ import java.util.ArrayList;
 
 import org.json.JSONObject;
 
+// Permanent release signing pipeline.
 public class MainActivity extends Activity {
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
