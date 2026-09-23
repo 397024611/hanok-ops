@@ -12,7 +12,7 @@ const SB_URL="https://lludyxgivnmmkovhhrgg.supabase.co";
 const SB_KEY="sb_publishable_YCeXPfqOdVS84ZRis-miEg_v7W0s3Dg";
 const HANOK_AI_URL="https://meathouseskewer.com.au/api/hanok-ai";
 let session=JSON.parse(localStorage.getItem("hanokops_session")||"null");
-let profile=null, stores=[], tickets=[], notifications=[], projects=[], people=[], page="home", filter="active", searchText="", refreshTimer=null, pendingUpdateUrl="";
+let profile=null, stores=[], tickets=[], notifications=[], projects=[], people=[], page="home", filter="active", searchText="", refreshTimer=null, pendingUpdateUrl="", recoveryAccessToken="";
 const app=document.getElementById("app"), detail=document.getElementById("detail");
 
 function showLoading(v){document.getElementById("loading").className="loading"+(v?" show":"")}
@@ -121,8 +121,7 @@ async function forgotPassword(){
   err.style.color="#f0cb85";
   err.textContent="Sending password reset email…";
   try{
-    const redirect="https://meathouseskewer.com.au/hanok-reset";
-    const r=await fetch(SB_URL+"/auth/v1/recover?redirect_to="+encodeURIComponent(redirect),{
+    const r=await fetch(SB_URL+"/auth/v1/recover",{
       method:"POST",
       headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
       body:JSON.stringify({email})
@@ -130,11 +129,69 @@ async function forgotPassword(){
     let data={};try{data=await r.json()}catch{}
     if(!r.ok)throw new Error(data?.msg||data?.message||data?.error_description||"Could not send reset email");
     err.style.color="#a7e3bf";
-    err.textContent="If that email belongs to an account, a reset link has been sent. Check your inbox and spam folder.";
+    err.textContent="Reset email sent. In the email, copy the password-reset link and paste it below.";
+    const tools=document.getElementById("recoveryTools");
+    if(tools)tools.classList.remove("hidden");
   }catch(e){
     err.style.color="#ff93a0";
     err.textContent=e.message||"Could not send reset email.";
   }
+}
+async function verifyRecoveryLink(){
+  const raw=(document.getElementById("recoveryLink")?.value||"").trim();
+  const err=document.getElementById("loginErr");
+  if(!raw){err.textContent="Paste the reset link from your email first.";return}
+  showLoading(true);
+  try{
+    let url;try{url=new URL(raw)}catch{throw new Error("That does not look like a valid reset link.")}
+    const q=url.searchParams;
+    const h=new URLSearchParams((url.hash||"").replace(/^#/,""));
+    let accessToken=h.get("access_token")||q.get("access_token")||"";
+    const refreshToken=h.get("refresh_token")||q.get("refresh_token")||"";
+    if(!accessToken){
+      const tokenHash=q.get("token")||q.get("token_hash");
+      if(!tokenHash)throw new Error("Recovery token not found in that link.");
+      const vr=await fetch(SB_URL+"/auth/v1/verify",{
+        method:"POST",
+        headers:{"apikey":SB_KEY,"Content-Type":"application/json"},
+        body:JSON.stringify({token_hash:tokenHash,type:"recovery"})
+      });
+      let v={};try{v=await vr.json()}catch{}
+      if(!vr.ok)throw new Error(v?.msg||v?.message||v?.error_description||"Recovery link is invalid or expired.");
+      accessToken=v.access_token||v.session?.access_token||"";
+      if(!accessToken)throw new Error("Recovery session was not returned.");
+    }
+    recoveryAccessToken=accessToken;
+    showNewPasswordForm();
+  }catch(e){
+    err.style.color="#ff93a0";
+    err.textContent=e.message||"Could not verify recovery link.";
+  }finally{showLoading(false)}
+}
+function showNewPasswordForm(){
+  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">PASSWORD RECOVERY</div></div><div class="loginBox"><h2>Set new password</h2><p>Choose a new password for your account.</p><input id="newPassword" type="password" autocomplete="new-password" placeholder="New password"><input id="confirmPassword" type="password" autocomplete="new-password" placeholder="Confirm new password"><div id="resetErr" class="error"></div><button class="primary" onclick="setRecoveredPassword()">Update password</button><button class="secondary" onclick="showLogin()">Back to sign in</button></div></div>'
+}
+async function setRecoveredPassword(){
+  const p=document.getElementById("newPassword").value;
+  const c=document.getElementById("confirmPassword").value;
+  const err=document.getElementById("resetErr");err.textContent="";
+  if(p.length<8){err.textContent="Use at least 8 characters.";return}
+  if(p!==c){err.textContent="Passwords do not match.";return}
+  if(!recoveryAccessToken){err.textContent="Recovery session expired. Request a new reset email.";return}
+  showLoading(true);
+  try{
+    const r=await fetch(SB_URL+"/auth/v1/user",{
+      method:"PUT",
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+recoveryAccessToken,"Content-Type":"application/json"},
+      body:JSON.stringify({password:p})
+    });
+    let data={};try{data=await r.json()}catch{}
+    if(!r.ok)throw new Error(data?.msg||data?.message||data?.error_description||"Password update failed.");
+    recoveryAccessToken="";
+    showLogin();
+    const e=document.getElementById("loginErr");
+    if(e){e.style.color="#a7e3bf";e.textContent="Password updated. Sign in with your new password."}
+  }catch(e){err.textContent=e.message||"Password update failed."}finally{showLoading(false)}
 }
 async function signUp(){
   const email=document.getElementById("email").value.trim(),password=document.getElementById("password").value;
@@ -179,7 +236,7 @@ async function loadEvents(id){return await api("/rest/v1/ops_ticket_events?ticke
 async function loadComments(id){return await api("/rest/v1/ops_ticket_comments?ticket_id=eq."+id+"&select=id,author_id,body,created_at&order=created_at.asc")||[]}
 
 function showLogin(){
-  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="forgotPassword()">Forgot password</button><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.8.2</div></div>'
+  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="forgotPassword()">Forgot password</button><div id="recoveryTools" class="hidden" style="margin-top:10px"><input id="recoveryLink" type="url" placeholder="Paste reset link from email"><button class="secondary" onclick="verifyRecoveryLink()">Continue reset</button></div><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.8.2</div></div>'
 }
 
 function nav(){const unread=notifications.filter(n=>!n.read_at).length;
