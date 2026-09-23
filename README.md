@@ -1,10 +1,10 @@
-# Hanok Ops
+# 报告老板
 
 Internal operations system for Hanok Group.
 
 ## Current version
 
-**Hanok HQ Android App v0.8**
+**报告老板 Android App v0.8.1**
 
 The HQ app is designed around the owner's daily operating workflow rather than a generic task list.
 
@@ -28,15 +28,15 @@ The HQ app is designed around the owner's daily operating workflow rather than a
 - New → Accepted → In Progress → Waiting → Completed workflow
 - Reopen requests from stores
 
-### Hanok AI
+### 报告老板 AI
 
 - AI-first Quick Capture with local-rule fallback
-- Ask Hanok AI natural-language operations questions
+- Ask 报告老板 AI natural-language operations questions
 - AI-generated Today Brief
 - Ticket-level Next Action suggestions
 - Ticket-level follow-up drafting
 - Model calls run server-side through Vercel AI Gateway
-- Hanok HQ Supabase bearer token is verified server-side
+- 报告老板 Supabase bearer token is verified server-side
 - Only HQ/Admin roles can use the AI routes
 - AI requests automatically refresh an expired HQ session token
 
