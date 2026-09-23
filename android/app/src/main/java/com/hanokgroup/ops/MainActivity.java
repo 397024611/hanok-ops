@@ -24,6 +24,8 @@ import android.webkit.WebViewClient;
 import java.io.InputStream;
 import java.util.ArrayList;
 
+import org.json.JSONObject;
+
 public class MainActivity extends Activity {
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
@@ -32,12 +34,14 @@ public class MainActivity extends Activity {
     private static final int VOICE_REQUEST = 1003;
     private static final String LOCAL_HOST = "hanokops.local";
     private static final String CHANNEL_ID = "hanok_ops_alerts";
+    private String pendingSharedText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         createNotificationChannel();
         requestNotificationPermission();
+        captureShareIntent(getIntent());
 
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF071A29);
@@ -56,6 +60,12 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new AppBridge(), "AndroidApp");
 
         webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                super.onPageFinished(view, url);
+                deliverPendingShare();
+            }
+
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
@@ -95,6 +105,35 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState == null) webView.loadUrl("https://" + LOCAL_HOST + "/index.html");
         else webView.restoreState(savedInstanceState);
+    }
+
+    private void captureShareIntent(Intent intent) {
+        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return;
+        String type = intent.getType();
+        if (type == null || !"text/plain".equals(type)) return;
+
+        String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+        CharSequence extra = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+        String text = extra == null ? "" : extra.toString().trim();
+        if (subject != null && !subject.trim().isEmpty() && !text.startsWith(subject.trim())) {
+            text = subject.trim() + "\n" + text;
+        }
+        if (!text.trim().isEmpty()) pendingSharedText = text.trim();
+    }
+
+    private void deliverPendingShare() {
+        if (pendingSharedText == null || pendingSharedText.isEmpty() || webView == null) return;
+        String quoted = JSONObject.quote(pendingSharedText);
+        pendingSharedText = null;
+        webView.evaluateJavascript("window.receiveSharedText && receiveSharedText(" + quoted + ")", null);
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        captureShareIntent(intent);
+        deliverPendingShare();
     }
 
     private void createNotificationChannel() {
