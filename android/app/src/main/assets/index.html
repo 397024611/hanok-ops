@@ -89,7 +89,7 @@ async function boot(){
     if(profile.role==="pending"){render();return}
     await Promise.all([loadTickets(true),loadNotifications(true)]);
     clearInterval(refreshTimer);refreshTimer=setInterval(()=>refreshAll(),12000);
-    render();consumePendingShare();
+    render();consumePendingShare();consumePendingTicket();
   }catch(e){toast(e.message);if(/JWT|token|signed/i.test(e.message))logout()}finally{showLoading(false)}
 }
 
@@ -101,7 +101,7 @@ async function loadTickets(silent=false){
   }catch(e){if(!silent)toast(e.message)}
 }
 async function loadNotifications(silent=false){if(!profile||profile.role==="pending")return;try{notifications=await api("/rest/v1/ops_notifications?select=id,ticket_id,kind,title,body,priority,read_at,created_at,data&order=created_at.desc&limit=100")||[];notifyNewNotifications();if(!silent&&page==="alerts")render()}catch(e){if(!silent)toast(e.message)}}
-function notifyNewNotifications(){let seen=[];try{seen=JSON.parse(localStorage.getItem("hanokops_notified_ids")||"[]")}catch{}const set=new Set(seen);let changed=false;for(const n of notifications){if(!n.read_at&&!set.has(n.id)){if(window.AndroidApp&&typeof window.AndroidApp.notify==="function"){try{window.AndroidApp.notify(n.title,n.body||"Hanok Ops alert")}catch{}}set.add(n.id);changed=true}}if(changed)localStorage.setItem("hanokops_notified_ids",JSON.stringify(Array.from(set).slice(-300)))}
+function notifyNewNotifications(){let seen=[];try{seen=JSON.parse(localStorage.getItem("hanokops_notified_ids")||"[]")}catch{}const set=new Set(seen);let changed=false;for(const n of notifications){if(!n.read_at&&!set.has(n.id)){if(window.AndroidApp&&typeof window.AndroidApp.notify==="function"){try{window.AndroidApp.notify(n.title,n.body||"Hanok HQ alert",n.ticket_id||"")}catch{}}set.add(n.id);changed=true}}if(changed)localStorage.setItem("hanokops_notified_ids",JSON.stringify(Array.from(set).slice(-300)))}
 async function refreshAll(){await Promise.all([loadTickets(true),loadNotifications(true)]);if(["home","tickets","alerts","stores"].includes(page))render()}
 async function loadEvents(id){return await api("/rest/v1/ops_ticket_events?ticket_id=eq."+id+"&select=id,event_type,message,details,created_at&order=created_at.asc")||[]}
 async function loadComments(id){return await api("/rest/v1/ops_ticket_comments?ticket_id=eq."+id+"&select=id,author_id,body,created_at&order=created_at.asc")||[]}
@@ -240,6 +240,16 @@ function receiveVoiceCapture(text){
   const home=document.getElementById("homeCapture");if(home){home.value=text;quickCapture(text);return}
   const box=document.getElementById("captureText");if(box){box.value=text;return}
   quickCapture(text)
+}
+function receiveNotificationTicket(ticketId){
+  if(!ticketId)return;
+  localStorage.setItem("hanokops_pending_ticket",ticketId);
+  consumePendingTicket()
+}
+function consumePendingTicket(){
+  if(!session||!profile||profile.role==="pending")return;
+  const id=localStorage.getItem("hanokops_pending_ticket");if(!id)return;
+  if(tickets.some(t=>t.id===id)){localStorage.removeItem("hanokops_pending_ticket");setTimeout(()=>openTicket(id),80)}
 }
 function receiveSharedText(text){
   if(!text)return;
