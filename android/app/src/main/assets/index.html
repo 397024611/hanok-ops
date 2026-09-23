@@ -49,7 +49,7 @@ async function api(path,opts={}){
   const txt=await res.text();return txt?JSON.parse(txt):null;
 }
 
-async function aiFetch(path,payload){
+async function aiFetch(path,payload,retry=true){
   if(!session?.access_token)throw new Error("Sign in required");
   const res=await fetch(HANOK_AI_URL+path,{
     method:"POST",
@@ -59,6 +59,10 @@ async function aiFetch(path,payload){
     },
     body:JSON.stringify(payload)
   });
+  if(res.status===401&&retry&&session.refresh_token){
+    const ok=await refreshSession();
+    if(ok)return aiFetch(path,payload,false);
+  }
   let data={};try{data=await res.json()}catch{}
   if(!res.ok)throw new Error(data.error||("AI request failed ("+res.status+")"));
   return data
