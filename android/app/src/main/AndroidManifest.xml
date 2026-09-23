@@ -5,7 +5,7 @@
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
-        android:label="Hanok Ops"
+        android:label="Hanok HQ"
         android:theme="@style/Theme.HanokOps"
         android:usesCleartextTraffic="false">
         <activity
