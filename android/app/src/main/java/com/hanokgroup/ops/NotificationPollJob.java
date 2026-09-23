@@ -4,8 +4,10 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -81,7 +83,8 @@ public class NotificationPollJob extends JobService {
 
             showNotification(
                     n.optString("title", "Hanok HQ"),
-                    n.optString("body", "New operations alert")
+                    n.optString("body", "New operations alert"),
+                    n.optString("ticket_id", "")
             );
             seen.add(id);
             changed = true;
@@ -134,7 +137,7 @@ public class NotificationPollJob extends JobService {
     private JSONArray getUnreadNotifications(String accessToken) {
         HttpURLConnection conn = null;
         try {
-            URL url = new URL(SB_URL + "/rest/v1/ops_notifications?select=id,title,body,priority,created_at&read_at=is.null&order=created_at.desc&limit=30");
+            URL url = new URL(SB_URL + "/rest/v1/ops_notifications?select=id,ticket_id,title,body,priority,created_at&read_at=is.null&order=created_at.desc&limit=30");
             conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(15000);
@@ -160,7 +163,7 @@ public class NotificationPollJob extends JobService {
         return sb.toString();
     }
 
-    private void showNotification(String title, String body) {
+    private void showNotification(String title, String body, String ticketId) {
         if (Build.VERSION.SDK_INT >= 33 &&
                 checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             return;
@@ -181,7 +184,18 @@ public class NotificationPollJob extends JobService {
                 ? new Notification.Builder(this, CHANNEL_ID)
                 : new Notification.Builder(this);
 
+        Intent launch = new Intent(this, MainActivity.class);
+        launch.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (ticketId != null && !ticketId.isEmpty()) launch.putExtra("ticket_id", ticketId);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                ticketId == null ? 0 : ticketId.hashCode(),
+                launch,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         builder.setSmallIcon(R.drawable.ic_launcher)
+                .setContentIntent(pendingIntent)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new Notification.BigTextStyle().bigText(body))
