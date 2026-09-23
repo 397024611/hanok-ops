@@ -3,13 +3,7 @@ name: Release Baogao Laoban APK
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
-  issues:
-    types: [opened]
   workflow_dispatch:
-  schedule:
-    - cron: '*/5 * * * *'
 
 jobs:
   release:
