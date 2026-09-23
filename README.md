@@ -4,7 +4,7 @@ Internal operations system for Hanok Group.
 
 ## Current version
 
-**Hanok HQ Android App v0.6**
+**Hanok HQ Android App v0.7**
 
 The HQ app is designed around the owner's daily operating workflow rather than a generic task list.
 
@@ -17,6 +17,7 @@ The HQ app is designed around the owner's daily operating workflow rather than a
 - Active project next actions
 - Quick Capture from text or Android voice input
 - Today Brief with group-wide workload by store
+- Procurement and Finance workspaces built from existing ticket categories
 
 ### Tickets
 
@@ -26,6 +27,13 @@ The HQ app is designed around the owner's daily operating workflow rather than a
 - Attachments and comments
 - New → Accepted → In Progress → Waiting → Completed workflow
 - Reopen requests from stores
+
+### Android integrations
+
+- Native voice capture
+- Share text from other Android apps directly into Quick Capture
+- Native background notification polling (periodic, subject to Android background scheduling)
+- Foreground/background Supabase session synchronization
 
 ### Quick Capture
 
