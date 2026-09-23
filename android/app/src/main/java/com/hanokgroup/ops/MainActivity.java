@@ -10,6 +10,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
@@ -21,12 +22,14 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
     private static final int FILE_REQUEST = 1001;
     private static final int NOTIFICATION_PERMISSION_REQUEST = 1002;
+    private static final int VOICE_REQUEST = 1003;
     private static final String LOCAL_HOST = "hanokops.local";
     private static final String CHANNEL_ID = "hanok_ops_alerts";
 
@@ -114,6 +117,19 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void startVoiceRecognition() {
+        try {
+            Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+            intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+            intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Quick capture");
+            intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+            startActivityForResult(intent, VOICE_REQUEST);
+        } catch (Exception e) {
+            runOnUiThread(() -> webView.evaluateJavascript(
+                    "window.toast && toast('Voice input is unavailable on this device')", null));
+        }
+    }
+
     private void showNotification(String title, String body) {
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         Notification.Builder builder;
@@ -135,6 +151,11 @@ public class MainActivity extends Activity {
         public void notify(String title, String body) {
             runOnUiThread(() -> showNotification(title, body));
         }
+
+        @JavascriptInterface
+        public void startVoiceCapture() {
+            runOnUiThread(() -> startVoiceRecognition());
+        }
     }
 
     @Override
@@ -146,6 +167,21 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == VOICE_REQUEST) {
+            if (resultCode == RESULT_OK && data != null) {
+                ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                if (results != null && !results.isEmpty()) {
+                    String spoken = results.get(0);
+                    String safe = spoken.replace("\\", "\\\\")
+                            .replace("'", "\\'")
+                            .replace("\n", "\\n")
+                            .replace("\r", "");
+                    webView.evaluateJavascript("window.receiveVoiceCapture && receiveVoiceCapture('" + safe + "')", null);
+                }
+            }
+            return;
+        }
+
         if (requestCode != FILE_REQUEST || fileCallback == null) return;
         Uri[] results = null;
         if (resultCode == RESULT_OK && data != null) {
