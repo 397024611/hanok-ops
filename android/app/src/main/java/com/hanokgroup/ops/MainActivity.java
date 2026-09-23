@@ -5,6 +5,9 @@ import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -156,6 +159,55 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void saveNativeSession(String accessToken, String refreshToken) {
+        if (accessToken == null || refreshToken == null || refreshToken.isEmpty()) return;
+        getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
+                .edit()
+                .putString("access_token", accessToken)
+                .putString("refresh_token", refreshToken)
+                .apply();
+        scheduleNotificationJob();
+    }
+
+    private void clearNativeSession() {
+        getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
+                .edit()
+                .remove("access_token")
+                .remove("refresh_token")
+                .apply();
+        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        if (scheduler != null) scheduler.cancel(NotificationPollJob.JOB_ID);
+    }
+
+    private void scheduleNotificationJob() {
+        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+        if (scheduler == null) return;
+        JobInfo info = new JobInfo.Builder(
+                NotificationPollJob.JOB_ID,
+                new ComponentName(this, NotificationPollJob.class)
+        )
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .setPeriodic(15 * 60 * 1000L)
+                .setPersisted(true)
+                .build();
+        scheduler.schedule(info);
+    }
+
+    private String storedNativeSession() {
+        String access = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
+                .getString("access_token", "");
+        String refresh = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
+                .getString("refresh_token", "");
+        try {
+            JSONObject out = new JSONObject();
+            out.put("access_token", access);
+            out.put("refresh_token", refresh);
+            return out.toString();
+        } catch (Exception e) {
+            return "{}";
+        }
+    }
+
     private void startVoiceRecognition() {
         try {
             Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -194,6 +246,21 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public void startVoiceCapture() {
             runOnUiThread(() -> startVoiceRecognition());
+        }
+
+        @JavascriptInterface
+        public void saveSession(String accessToken, String refreshToken) {
+            runOnUiThread(() -> saveNativeSession(accessToken, refreshToken));
+        }
+
+        @JavascriptInterface
+        public void clearSession() {
+            runOnUiThread(() -> clearNativeSession());
+        }
+
+        @JavascriptInterface
+        public String getStoredSession() {
+            return storedNativeSession();
         }
     }
 
