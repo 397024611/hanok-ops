@@ -34,6 +34,10 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Compile verification
+        working-directory: android
+        run: gradle --no-daemon assembleDebug
+
       - name: Restore private signing key
         shell: bash
         env:
