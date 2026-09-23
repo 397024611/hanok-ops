@@ -15,6 +15,14 @@ Configure these repository Actions secrets:
 
 The workflow decodes the keystore only inside the temporary GitHub Actions runner, builds `assembleRelease`, verifies the APK certificate, and uploads `Baogao-Laoban-Release.apk`.
 
+## Release certificate identity
+
+Public SHA-256 certificate fingerprint:
+
+`FB:8C:AE:F2:22:50:1C:81:2F:A4:9D:BB:18:E1:73:AF:3A:86:B7:1C:C3:7A:2F:9E:3F:8E:00:61:E5:BB:CF:57`
+
+Use this fingerprint to verify that future production APKs are signed by the original 报告老板 release key.
+
 ## Key continuity
 
 The release private key is the identity of the Android app. If the key is lost, a new APK signed with a different key cannot update an existing installation.
