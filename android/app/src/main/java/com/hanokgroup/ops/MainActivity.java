@@ -292,6 +292,32 @@ public class MainActivity extends Activity {
         public String getStoredSession() {
             return storedNativeSession();
         }
+
+        @JavascriptInterface
+        public String getVersionName() {
+            return BuildConfig.VERSION_NAME;
+        }
+
+        @JavascriptInterface
+        public int getVersionCode() {
+            return BuildConfig.VERSION_CODE;
+        }
+
+        @JavascriptInterface
+        public void openUpdateUrl(String url) {
+            if (url == null || url.isEmpty()) return;
+            try {
+                Uri uri = Uri.parse(url);
+                boolean trusted = "https".equalsIgnoreCase(uri.getScheme())
+                        && "github.com".equalsIgnoreCase(uri.getHost())
+                        && uri.getPath() != null
+                        && uri.getPath().startsWith("/GreatDaniel93/hanok-ops/releases/");
+                if (!trusted) return;
+                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+                startActivity(intent);
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     @Override
