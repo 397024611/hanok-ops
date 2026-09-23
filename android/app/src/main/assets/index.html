@@ -11,7 +11,7 @@
 const SB_URL="https://lludyxgivnmmkovhhrgg.supabase.co";
 const SB_KEY="sb_publishable_YCeXPfqOdVS84ZRis-miEg_v7W0s3Dg";
 let session=JSON.parse(localStorage.getItem("hanokops_session")||"null");
-let profile=null, stores=[], tickets=[], notifications=[], projects=[], page="home", filter="active", refreshTimer=null;
+let profile=null, stores=[], tickets=[], notifications=[], projects=[], people=[], page="home", filter="active", refreshTimer=null;
 const app=document.getElementById("app"), detail=document.getElementById("detail");
 
 function showLoading(v){document.getElementById("loading").className="loading"+(v?" show":"")}
@@ -22,6 +22,7 @@ function statusClass(s){return s==="completed"?"green":s==="waiting"?"gold":(s==
 function statusLabel(s){return ({new:"New",accepted:"Accepted",in_progress:"In Progress",waiting:"Waiting",completed:"Completed"})[s]||s}
 function storeFor(id){return stores.find(s=>s.id===id)||{name:"Store",code:"OPS"}}
 function ticketId(t){const s=storeFor(t.store_id);return s.code+"-"+String(t.ticket_no||0).padStart(5,"0")}
+function personFor(id){return people.find(p=>p.user_id===id)||null}
 function authHeaders(extra={}){return {"apikey":SB_KEY,"Authorization":"Bearer "+session.access_token,...extra}}
 function loadLocalProjects(){try{projects=JSON.parse(localStorage.getItem("hanokops_projects")||"[]");if(!Array.isArray(projects))projects=[]}catch{projects=[]}}
 function saveLocalProjects(){localStorage.setItem("hanokops_projects",JSON.stringify(projects))}
@@ -74,6 +75,7 @@ async function boot(){
     const ps=await api("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(session.user.id)+"&select=user_id,email,display_name,role,store_id");
     profile=ps&&ps[0];if(!profile)throw new Error("Profile not found");
     stores=await api("/rest/v1/ops_stores?select=id,code,name,active&active=eq.true&order=name.asc")||[];loadLocalProjects();
+    people=await api("/rest/v1/ops_profiles?select=user_id,display_name,role,store_id&order=display_name.asc")||[];
     if(profile.role==="pending"){render();return}
     await Promise.all([loadTickets(true),loadNotifications(true)]);
     clearInterval(refreshTimer);refreshTimer=setInterval(()=>refreshAll(),12000);
@@ -107,6 +109,7 @@ function ticketCard(t){
   if(isOverdue(t))meta.push("Overdue · "+fmtDate(t.due_at));
   else if(isDueToday(t))meta.push("Due today · "+fmtDate(t.due_at));
   if(t.status==="waiting"&&t.follow_up_at)meta.push("Follow-up · "+fmtDate(t.follow_up_at));
+  const owner=personFor(t.assigned_to);if(owner)meta.push("Owner · "+owner.display_name);
   return '<div class="card ticket" onclick="openTicket(\''+t.id+'\')"><div class="row between"><div class="row"><span class="pill '+(urgent?"red":statusClass(t.status))+'">'+(urgent?"Urgent":statusLabel(t.status))+'</span><span class="store">'+s.name+'</span></div><span class="age">'+age(t.created_at)+'</span></div><h3>'+escapeHtml(t.title)+'</h3><p>'+escapeHtml(t.description||t.category)+'</p>'+(meta.length?'<div class="ticketMeta">'+meta.map(x=>'<span>'+escapeHtml(x)+'</span>').join("")+'</div>':'')+'<span class="chev">›</span></div>'
 }
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
@@ -128,13 +131,14 @@ function home(){
 function ticketList(){
   let arr=tickets;
   if(filter==="active")arr=arr.filter(t=>t.status!=="completed");
+  if(filter==="mine")arr=arr.filter(t=>t.assigned_to===profile.user_id&&t.status!=="completed");
   if(filter==="today")arr=arr.filter(isDueToday);
   if(filter==="overdue")arr=arr.filter(isOverdue);
   if(filter==="urgent")arr=arr.filter(t=>t.priority==="urgent"&&t.status!=="completed");
   if(filter==="waiting")arr=arr.filter(t=>t.status==="waiting");
   if(filter==="completed")arr=arr.filter(t=>t.status==="completed");
   if(filter!=="completed")arr=byAttention(arr);
-  return '<div class="screen"><div class="pageHead"><h1>Tickets</h1><button onclick="newTicket()">＋</button></div><div class="filters">'+["active","today","overdue","urgent","waiting","completed"].map(f=>'<button class="'+(filter===f?"active":"")+'" onclick="filter=\''+f+'\';render()">'+(f==="today"?"Today":f[0].toUpperCase()+f.slice(1))+'</button>').join("")+'</div><main class="content" style="padding-top:7px">'+(arr.length?arr.map(ticketCard).join(""):'<div class="empty">Nothing here.</div>')+'</main>'+nav()+'</div>'
+  return '<div class="screen"><div class="pageHead"><h1>Tickets</h1><button onclick="newTicket()">＋</button></div><div class="filters">'+["active","mine","today","overdue","urgent","waiting","completed"].map(f=>'<button class="'+(filter===f?"active":"")+'" onclick="filter=\''+f+'\';render()">'+(f==="today"?"Today":f[0].toUpperCase()+f.slice(1))+'</button>').join("")+'</div><main class="content" style="padding-top:7px">'+(arr.length?arr.map(ticketCard).join(""):'<div class="empty">Nothing here.</div>')+'</main>'+nav()+'</div>'
 }
 function storesPage(){
   return '<div class="screen"><div class="pageHead"><h1>Stores</h1><button onclick="loadTickets()">↻</button></div><main class="content" style="padding-top:14px">'+stores.map(s=>{const all=tickets.filter(t=>t.store_id===s.id),active=all.filter(t=>t.status!=="completed");return '<div class="card storeCard tap" onclick="openStore(\''+s.id+'\')"><div class="row between"><div><h3>'+escapeHtml(s.name)+'</h3><div class="address">'+s.code+' · Hanok Group</div></div><span class="pill '+(active.some(t=>t.priority==="urgent"||isOverdue(t))?"red":"green")+'">'+(active.some(t=>t.priority==="urgent"||isOverdue(t))?"Needs attention":"Active")+'</span></div><div class="kpis"><div class="kpi open"><b>'+active.length+'</b>Open</div><div class="kpi urgent"><b>'+active.filter(t=>t.priority==="urgent"||isOverdue(t)).length+'</b>Critical</div><div class="kpi wait"><b>'+active.filter(t=>t.status==="waiting").length+'</b>Waiting</div><div class="kpi done"><b>'+all.filter(t=>t.status==="completed").length+'</b>Done</div></div></div>'}).join("")+'</main>'+nav()+'</div>'
@@ -275,7 +279,7 @@ async function saveCapture(){
 
 async function openTicket(id){
   const t=tickets.find(x=>x.id===id);if(!t)return;
-  detail.className="overlay show";detail.innerHTML='<div class="detailTop"><button onclick="closeDetail()">‹</button><b>Ticket Detail</b><button>⋮</button></div><div class="sheet"><div class="detailCard"><div class="row between"><div class="row"><span class="pill '+(t.priority==="urgent"?"red":statusClass(t.status))+'">'+(t.priority==="urgent"?"Urgent":statusLabel(t.status))+'</span><span class="store">'+ticketId(t)+'</span></div><span class="pill '+statusClass(t.status)+'">'+statusLabel(t.status)+'</span></div><h2>'+escapeHtml(t.title)+'</h2><div class="store">▦ '+escapeHtml(storeFor(t.store_id).name)+'</div><p class="desc">'+escapeHtml(t.description||"No description.")+'</p><div class="meta"><div><b>Category</b><br>'+escapeHtml(t.category)+'</div><div><b>Reported by</b><br>'+escapeHtml(t.reported_by||"—")+'</div><div><b>Due</b><br>'+fmtDate(t.due_at)+'</div><div><b>Created</b><br>'+fmtDate(t.created_at)+'</div></div><div id="attachmentsWrap"><b>Attachments</b><div id="attachments" class="attachments"><div class="empty" style="padding:12px">Loading…</div></div></div><div id="reopenWrap"></div><div id="timeline" class="timeline"><b>Timeline</b><div class="empty" style="padding:18px">Loading…</div></div><div id="comments"><b>Comments</b><div class="empty" style="padding:18px">Loading…</div></div><div class="form"><label>Add comment</label><textarea id="commentBody" placeholder="Add an update..."></textarea><button class="secondary" onclick="addComment(\''+t.id+'\')">Post comment</button></div></div></div>'+(isHQ()&&t.status!=="completed"?'<div class="actions"><button onclick="'+(t.status==="new"?'acceptTicket': 'startTicket')+'(\''+t.id+'\')">'+(t.status==="new"?'✓ Accept':'▶ Start Work')+'</button><button onclick="waitingForm(\''+t.id+'\')">◷ Waiting</button><button class="complete" onclick="completeForm(\''+t.id+'\')">✓ Complete</button></div>':'');
+  detail.className="overlay show";detail.innerHTML='<div class="detailTop"><button onclick="closeDetail()">‹</button><b>Ticket Detail</b><button>⋮</button></div><div class="sheet"><div class="detailCard"><div class="row between"><div class="row"><span class="pill '+(t.priority==="urgent"?"red":statusClass(t.status))+'">'+(t.priority==="urgent"?"Urgent":statusLabel(t.status))+'</span><span class="store">'+ticketId(t)+'</span></div><span class="pill '+statusClass(t.status)+'">'+statusLabel(t.status)+'</span></div><h2>'+escapeHtml(t.title)+'</h2><div class="store">▦ '+escapeHtml(storeFor(t.store_id).name)+'</div><p class="desc">'+escapeHtml(t.description||"No description.")+'</p><div class="meta"><div><b>Category</b><br>'+escapeHtml(t.category)+'</div><div><b>Reported by</b><br>'+escapeHtml(t.reported_by||"—")+'</div><div><b>Due</b><br>'+fmtDate(t.due_at)+'</div><div><b>Created</b><br>'+fmtDate(t.created_at)+'</div><div><b>Owner</b><br>'+(personFor(t.assigned_to)?escapeHtml(personFor(t.assigned_to).display_name):"Unassigned")+'</div></div>'+(isHQ()?'<div class="form"><label>Assign to</label><select onchange="assignTicket(\''+t.id+'\',this.value)"><option value="">Unassigned</option>'+people.filter(p=>["admin","hq"].includes(p.role)).map(p=>'<option value="'+p.user_id+'" '+(t.assigned_to===p.user_id?"selected":"")+'>'+escapeHtml(p.display_name)+'</option>').join("")+'</select></div>':'')+'<div id="attachmentsWrap"><b>Attachments</b><div id="attachments" class="attachments"><div class="empty" style="padding:12px">Loading…</div></div></div><div id="reopenWrap"></div><div id="timeline" class="timeline"><b>Timeline</b><div class="empty" style="padding:18px">Loading…</div></div><div id="comments"><b>Comments</b><div class="empty" style="padding:18px">Loading…</div></div><div class="form"><label>Add comment</label><textarea id="commentBody" placeholder="Add an update..."></textarea><button class="secondary" onclick="addComment(\''+t.id+'\')">Post comment</button></div></div></div>'+(isHQ()&&t.status!=="completed"?'<div class="actions"><button onclick="'+(t.status==="new"?'acceptTicket': 'startTicket')+'(\''+t.id+'\')">'+(t.status==="new"?'✓ Accept':'▶ Start Work')+'</button><button onclick="waitingForm(\''+t.id+'\')">◷ Waiting</button><button class="complete" onclick="completeForm(\''+t.id+'\')">✓ Complete</button></div>':'');
   try{
     const [ev,co,at,rr]=await Promise.all([loadEvents(id),loadComments(id),api("/rest/v1/ops_ticket_attachments?ticket_id=eq."+id+"&select=id,storage_path,file_name,mime_type,created_at&order=created_at.asc"),api("/rest/v1/ops_reopen_requests?ticket_id=eq."+id+"&select=id,reason,status,created_at,reviewed_at&order=created_at.desc")]);
     document.getElementById("timeline").innerHTML='<b>Timeline</b>'+(ev.length?ev.map(e=>'<div class="tl"><i></i><div><strong>'+escapeHtml(e.message||e.event_type)+'</strong><span>'+escapeHtml(e.event_type.replaceAll("_"," "))+'</span></div><span>'+fmtDate(e.created_at)+'</span></div>').join(""):'<div class="empty" style="padding:18px">No events yet.</div>');
@@ -290,6 +294,9 @@ async function openAttachment(a){showLoading(true);try{const r=await fetch(SB_UR
 function renderReopenRequests(ticketId,list){const box=document.getElementById("reopenWrap");if(!box)return;const pending=list.find(x=>x.status==="pending");if(!pending){box.innerHTML="";return}box.innerHTML='<div class="reopenCard"><b>Store requested reopen</b><p>'+escapeHtml(pending.reason)+'</p><div class="reopenActions"><button onclick="reviewReopen(\''+pending.id+'\',false,\''+ticketId+'\')">Reject</button><button class="approve" onclick="reviewReopen(\''+pending.id+'\',true,\''+ticketId+'\')">Approve & Reopen</button></div></div>'}
 async function reviewReopen(requestId,approve,ticketId){showLoading(true);try{await api("/rest/v1/rpc/ops_review_reopen_request",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({p_request_id:requestId,p_approve:approve})});await Promise.all([loadTickets(true),loadNotifications(true)]);await openTicket(ticketId);toast(approve?"Ticket reopened":"Request rejected")}catch(e){toast(e.message)}finally{showLoading(false)}}
 
+async function assignTicket(id,userId){
+  showLoading(true);try{await api("/rest/v1/ops_tickets?id=eq."+id,{method:"PATCH",headers:{"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({assigned_to:userId||null})});await loadTickets(true);toast(userId?"Owner updated":"Ticket unassigned")}catch(e){toast(e.message)}finally{showLoading(false)}
+}
 async function startTicket(id){showLoading(true);try{await api("/rest/v1/ops_tickets?id=eq."+id,{method:"PATCH",headers:{"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({status:"in_progress"})});await loadTickets(true);await openTicket(id);toast("Work started")}catch(e){toast(e.message)}finally{showLoading(false)}}
 async function acceptTicket(id){
   showLoading(true);try{await api("/rest/v1/ops_tickets?id=eq."+id,{method:"PATCH",headers:{"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({status:"accepted"})});await loadTickets(true);closeDetail();render();toast("Ticket accepted")}catch(e){toast(e.message)}finally{showLoading(false)}
