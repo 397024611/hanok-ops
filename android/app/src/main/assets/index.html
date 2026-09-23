@@ -12,7 +12,7 @@ const SB_URL="https://lludyxgivnmmkovhhrgg.supabase.co";
 const SB_KEY="sb_publishable_YCeXPfqOdVS84ZRis-miEg_v7W0s3Dg";
 const HANOK_AI_URL="https://meathouseskewer.com.au/api/hanok-ai";
 let session=JSON.parse(localStorage.getItem("hanokops_session")||"null");
-let profile=null, stores=[], tickets=[], notifications=[], projects=[], people=[], page="home", filter="active", searchText="", refreshTimer=null;
+let profile=null, stores=[], tickets=[], notifications=[], projects=[], people=[], page="home", filter="active", searchText="", refreshTimer=null, pendingUpdateUrl="";
 const app=document.getElementById("app"), detail=document.getElementById("detail");
 
 function showLoading(v){document.getElementById("loading").className="loading"+(v?" show":"")}
@@ -139,7 +139,7 @@ async function boot(){
     if(profile.role==="pending"){render();return}
     await Promise.all([loadTickets(true),loadNotifications(true)]);
     clearInterval(refreshTimer);refreshTimer=setInterval(()=>refreshAll(),12000);
-    render();consumePendingShare();consumePendingTicket();
+    render();consumePendingShare();consumePendingTicket();scheduleUpdateCheck();
   }catch(e){toast(e.message);if(/JWT|token|signed/i.test(e.message))logout()}finally{showLoading(false)}
 }
 
@@ -296,9 +296,43 @@ function projectToTicket(id){
   if(!p.store_id){toast("Link this project to a store before creating a ticket");return}
   newTicket(p.store_id,"["+p.name+"] "+(p.next_action||"Project task"),"Project: "+p.name+"\nStage: "+projectStageLabel(p.stage)+(p.location?"\nLocation: "+p.location:"")+(p.notes?"\n\n"+p.notes:""))
 }
+function currentAppVersion(){
+  if(window.AndroidApp&&typeof window.AndroidApp.getVersionName==="function"){try{return window.AndroidApp.getVersionName()||"0.0.0"}catch{}}
+  return "0.0.0"
+}
+function versionParts(v){return String(v||"0").replace(/^v/i,"").split(".").map(x=>parseInt(x,10)||0)}
+function isNewerVersion(latest,current){
+  const a=versionParts(latest),b=versionParts(current),n=Math.max(a.length,b.length);
+  for(let i=0;i<n;i++){const x=a[i]||0,y=b[i]||0;if(x>y)return true;if(x<y)return false}
+  return false
+}
+async function checkForAppUpdate(silent=false){
+  try{
+    const res=await fetch("https://api.github.com/repos/GreatDaniel93/hanok-ops/releases/latest",{headers:{"Accept":"application/vnd.github+json"}});
+    if(!res.ok){if(!silent)toast("No official release channel is available yet");return}
+    const rel=await res.json(),latest=String(rel.tag_name||"").replace(/^v/i,""),current=currentAppVersion();
+    const asset=(rel.assets||[]).find(a=>a.name==="Baogao-Laoban-Release.apk");
+    if(!latest||!asset?.browser_download_url){if(!silent)toast("Latest release package is not ready");return}
+    if(!isNewerVersion(latest,current)){if(!silent)toast("报告老板 "+current+" is up to date");return}
+    pendingUpdateUrl=asset.browser_download_url;
+    detail.className="overlay show";
+    detail.innerHTML='<div class="detailTop"><button onclick="closeDetail()">‹</button><b>App Update</b><button></button></div><div class="sheet"><div class="detailCard"><span class="pill green">Official signed release</span><h2>报告老板 '+escapeHtml(latest)+'</h2><p class="desc">Installed: '+escapeHtml(current)+'<br>A newer signed version is available. It can update the existing app without uninstalling it.</p><button class="primary" onclick="downloadPendingUpdate()">Download & Update</button><div class="captureHint">Android may ask you to confirm installation. Your existing app data and login are retained during a normal update.</div></div></div>';
+  }catch(e){if(!silent)toast("Could not check for updates")}
+}
+function downloadPendingUpdate(){
+  if(!pendingUpdateUrl)return;
+  if(window.AndroidApp&&typeof window.AndroidApp.openUpdateUrl==="function"){window.AndroidApp.openUpdateUrl(pendingUpdateUrl)}
+  else window.open(pendingUpdateUrl,"_blank")
+}
+function scheduleUpdateCheck(){
+  const key="baogao_last_update_check",now=Date.now(),last=parseInt(localStorage.getItem(key)||"0",10);
+  if(now-last<12*60*60*1000)return;
+  localStorage.setItem(key,String(now));
+  setTimeout(()=>checkForAppUpdate(true),2500)
+}
 function profilePage(){
   const s=profile.store_id?storeFor(profile.store_id):null;
-  return '<div class="screen"><div class="pageHead"><h1>Profile</h1><button onclick="go(\'home\')">×</button></div><main class="content" style="padding-top:14px"><div class="card ticket"><h3>'+escapeHtml(profile.display_name)+'</h3><p>'+escapeHtml(profile.email||"")+'</p><div style="margin-top:10px"><span class="pill blue">'+escapeHtml(profile.role)+'</span>'+(s?' <span class="pill gold">'+escapeHtml(s.name)+'</span>':'')+'</div></div><div class="card ticket"><h3>报告老板 v0.8.1</h3><p>Today, Inbox, Projects and Quick Capture are enabled.</p></div><button class="secondary" onclick="logout()">Sign out</button></main></div>'
+  return '<div class="screen"><div class="pageHead"><h1>Profile</h1><button onclick="go(\'home\')">×</button></div><main class="content" style="padding-top:14px"><div class="card ticket"><h3>'+escapeHtml(profile.display_name)+'</h3><p>'+escapeHtml(profile.email||"")+'</p><div style="margin-top:10px"><span class="pill blue">'+escapeHtml(profile.role)+'</span>'+(s?' <span class="pill gold">'+escapeHtml(s.name)+'</span>':'')+'</div></div><div class="card ticket"><h3>报告老板 <span id="profileVersion">'+escapeHtml(currentAppVersion())+'</span></h3><p>Today, Inbox, Projects, Quick Capture and AI are enabled.</p><button class="secondary" style="margin-top:10px" onclick="checkForAppUpdate(false)">Check for updates</button></div><button class="secondary" onclick="logout()">Sign out</button></main></div>'
 }
 function pendingPage(){
   return '<div class="screen"><div class="pageHead"><h1>报告老板</h1><button></button></div><main class="content" style="padding-top:30px"><div class="card pending"><span class="pill gold">Pending setup</span><h2>Your account is ready.</h2><p>This account has not yet been assigned to HQ or a store. Send the account email to the 报告老板 administrator, then sign in again after assignment.</p><button class="secondary" onclick="logout()">Sign out</button></div></main></div>'
