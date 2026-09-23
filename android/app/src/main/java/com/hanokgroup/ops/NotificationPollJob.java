@@ -173,7 +173,7 @@ public class NotificationPollJob extends JobService {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
                     CHANNEL_ID,
-                    "报告老板 Alerts",
+                    "报告老板提醒",
                     NotificationManager.IMPORTANCE_HIGH
             );
             channel.setDescription("Urgent tickets, follow-ups, overdue items and store requests");
