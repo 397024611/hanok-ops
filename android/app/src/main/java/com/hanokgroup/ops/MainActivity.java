@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
@@ -38,6 +39,7 @@ public class MainActivity extends Activity {
     private static final String LOCAL_HOST = "hanokops.local";
     private static final String CHANNEL_ID = "hanok_ops_alerts";
     private String pendingSharedText;
+    private String pendingTicketId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +47,7 @@ public class MainActivity extends Activity {
         createNotificationChannel();
         requestNotificationPermission();
         captureShareIntent(getIntent());
+        captureTicketIntent(getIntent());
 
         webView = new WebView(this);
         webView.setBackgroundColor(0xFF071A29);
@@ -67,6 +70,7 @@ public class MainActivity extends Activity {
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
                 deliverPendingShare();
+                deliverPendingTicket();
             }
 
             @Override
@@ -110,6 +114,12 @@ public class MainActivity extends Activity {
         else webView.restoreState(savedInstanceState);
     }
 
+    private void captureTicketIntent(Intent intent) {
+        if (intent == null) return;
+        String ticketId = intent.getStringExtra("ticket_id");
+        if (ticketId != null && !ticketId.trim().isEmpty()) pendingTicketId = ticketId.trim();
+    }
+
     private void captureShareIntent(Intent intent) {
         if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) return;
         String type = intent.getType();
@@ -124,6 +134,13 @@ public class MainActivity extends Activity {
         if (!text.trim().isEmpty()) pendingSharedText = text.trim();
     }
 
+    private void deliverPendingTicket() {
+        if (pendingTicketId == null || pendingTicketId.isEmpty() || webView == null) return;
+        String quoted = JSONObject.quote(pendingTicketId);
+        pendingTicketId = null;
+        webView.evaluateJavascript("window.receiveNotificationTicket && receiveNotificationTicket(" + quoted + ")", null);
+    }
+
     private void deliverPendingShare() {
         if (pendingSharedText == null || pendingSharedText.isEmpty() || webView == null) return;
         String quoted = JSONObject.quote(pendingSharedText);
@@ -136,7 +153,9 @@ public class MainActivity extends Activity {
         super.onNewIntent(intent);
         setIntent(intent);
         captureShareIntent(intent);
+        captureTicketIntent(intent);
         deliverPendingShare();
+        deliverPendingTicket();
     }
 
     private void createNotificationChannel() {
@@ -221,7 +240,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void showNotification(String title, String body) {
+    private void showNotification(String title, String body, String ticketId) {
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -229,7 +248,18 @@ public class MainActivity extends Activity {
         } else {
             builder = new Notification.Builder(this);
         }
+        Intent launch = new Intent(this, MainActivity.class);
+        launch.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        if (ticketId != null && !ticketId.isEmpty()) launch.putExtra("ticket_id", ticketId);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                this,
+                ticketId == null ? 0 : ticketId.hashCode(),
+                launch,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
         builder.setSmallIcon(com.hanokgroup.ops.R.drawable.ic_launcher)
+                .setContentIntent(pendingIntent)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new Notification.BigTextStyle().bigText(body))
@@ -239,8 +269,8 @@ public class MainActivity extends Activity {
 
     public class AppBridge {
         @JavascriptInterface
-        public void notify(String title, String body) {
-            runOnUiThread(() -> showNotification(title, body));
+        public void notify(String title, String body, String ticketId) {
+            runOnUiThread(() -> showNotification(title, body, ticketId));
         }
 
         @JavascriptInterface
