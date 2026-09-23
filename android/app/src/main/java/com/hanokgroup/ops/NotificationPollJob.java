@@ -88,7 +88,17 @@ public class NotificationPollJob extends JobService {
         }
 
         if (changed) {
-            if (seen.size() > 300) seen.clear();
+            if (seen.size() > 300) {
+                Set<String> recent = new HashSet<>();
+                for (int i = 0; i < notifications.length(); i++) {
+                    JSONObject n = notifications.optJSONObject(i);
+                    if (n != null) {
+                        String id = n.optString("id", "");
+                        if (!id.isEmpty()) recent.add(id);
+                    }
+                }
+                seen = recent;
+            }
             prefs.edit().putStringSet("notified_ids", seen).apply();
         }
     }
