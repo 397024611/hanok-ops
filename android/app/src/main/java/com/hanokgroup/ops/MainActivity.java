@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import org.json.JSONObject;
 
 // Permanent release signing pipeline.
+// Release signing validation trigger.
 public class MainActivity extends Activity {
     private WebView webView;
     private ValueCallback<Uri[]> fileCallback;
