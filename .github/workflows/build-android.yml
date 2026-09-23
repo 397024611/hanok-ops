@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     env:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -65,11 +65,40 @@ jobs:
       - name: Rename APK
         run: cp android/app/build/outputs/apk/release/app-release.apk Baogao-Laoban-Release.apk
 
+      - name: Read app version
+        id: app_version
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION_NAME="$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" android/app/build.gradle | head -1)"
+          test -n "$VERSION_NAME"
+          echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Upload signed release
         uses: actions/upload-artifact@v4
         with:
-          name: Baogao-Laoban-Release
+          name: Baogao-Laoban-Release-v${{ steps.app_version.outputs.name }}
           path: |
             Baogao-Laoban-Release.apk
             Baogao-Laoban-Release.sha256
           if-no-files-found: error
+
+      - name: Publish versioned GitHub Release
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ steps.app_version.outputs.name }}
+        run: |
+          set -euo pipefail
+          TAG="v$VERSION_NAME"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; keeping the existing signed release."
+          else
+            gh release create "$TAG" \
+              Baogao-Laoban-Release.apk \
+              Baogao-Laoban-Release.sha256 \
+              --target "$GITHUB_SHA" \
+              --title "报告老板 $TAG" \
+              --generate-notes
+          fi
