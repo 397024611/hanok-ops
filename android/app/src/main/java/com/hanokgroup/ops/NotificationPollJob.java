@@ -30,8 +30,8 @@ public class NotificationPollJob extends JobService {
     public static final int JOB_ID = 42001;
     public static final String PREFS = "hanok_ops_native";
 
-    private static final String SB_URL = "https://lludyxgivnmmkovhhrgg.supabase.co";
-    private static final String SB_KEY = "sb_publishable_YCeXPfqOdVS84ZRis-miEg_v7W0s3Dg";
+    private static final String SB_URL = "https://tqfwbsjchespjkxliodo.supabase.co";
+    private static final String SB_KEY = "sb_publishable_gzlaNquJPCOsgVMb1ZhRdw_X38GSi6s";
     private static final String CHANNEL_ID = "hanok_ops_alerts";
 
     @Override
