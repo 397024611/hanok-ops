@@ -26,6 +26,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import java.io.InputStream;
+import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.ArrayList;
 
 import org.json.JSONObject;
@@ -63,21 +66,39 @@ public class MainActivity extends Activity {
         s.setSupportZoom(false);
         s.setBuiltInZoomControls(false);
         s.setDisplayZoomControls(false);
+        s.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        if (Build.VERSION.SDK_INT >= 26) s.setSafeBrowsingEnabled(true);
 
         webView.addJavascriptInterface(new AppBridge(), "AndroidApp");
 
         webView.setWebViewClient(new WebViewClient() {
             @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                Uri uri = request.getUrl();
+                if ("https".equalsIgnoreCase(uri.getScheme()) && LOCAL_HOST.equals(uri.getHost())) return false;
+                // External pages must never inherit the app's privileged AndroidApp bridge.
+                if (request.isForMainFrame() && "https".equalsIgnoreCase(uri.getScheme())) {
+                    try { startActivity(new Intent(Intent.ACTION_VIEW, uri)); } catch (Exception ignored) {}
+                }
+                return true;
+            }
+
+            @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
-                deliverPendingShare();
-                deliverPendingTicket();
+                if (LOCAL_HOST.equals(Uri.parse(url).getHost())) {
+                    deliverPendingShare();
+                    deliverPendingTicket();
+                }
             }
 
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 Uri uri = request.getUrl();
-                if (LOCAL_HOST.equals(uri.getHost())) {
+                if (request.isForMainFrame() && !("https".equalsIgnoreCase(uri.getScheme()) && LOCAL_HOST.equals(uri.getHost()))) {
+                    return blockedDocument(403, "External navigation blocked");
+                }
+                if ("https".equalsIgnoreCase(uri.getScheme()) && LOCAL_HOST.equals(uri.getHost())) {
                     String path = uri.getPath();
                     if (path == null || path.equals("/") || path.equals("/index.html")) path = "/index.html";
                     if (path.startsWith("/")) path = path.substring(1);
@@ -87,7 +108,7 @@ public class MainActivity extends Activity {
                         String mime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext);
                         if (mime == null) mime = path.endsWith(".html") ? "text/html" : "application/octet-stream";
                         return new WebResourceResponse(mime, "UTF-8", stream);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) { return blockedDocument(404, "Local resource not found"); }
                 }
                 return super.shouldInterceptRequest(view, request);
             }
@@ -101,7 +122,7 @@ public class MainActivity extends Activity {
                 fileCallback = callback;
                 try {
                     Intent intent = params.createIntent();
-                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+                    intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, false);
                     startActivityForResult(intent, FILE_REQUEST);
                     return true;
                 } catch (Exception e) {
@@ -113,6 +134,11 @@ public class MainActivity extends Activity {
 
         if (savedInstanceState == null) webView.loadUrl("https://" + LOCAL_HOST + "/index.html");
         else webView.restoreState(savedInstanceState);
+    }
+
+    private WebResourceResponse blockedDocument(int status, String message) {
+        return new WebResourceResponse("text/plain", "UTF-8", status, message,
+                Collections.emptyMap(), new ByteArrayInputStream(message.getBytes(StandardCharsets.UTF_8)));
     }
 
     private void captureTicketIntent(Intent intent) {
@@ -194,6 +220,7 @@ public class MainActivity extends Activity {
                 .edit()
                 .remove("access_token")
                 .remove("refresh_token")
+                .remove("notified_ids")
                 .apply();
         JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
         if (scheduler != null) scheduler.cancel(NotificationPollJob.JOB_ID);
@@ -242,6 +269,7 @@ public class MainActivity extends Activity {
     }
 
     private void showNotification(String title, String body, String ticketId) {
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
         NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
         Notification.Builder builder;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -312,13 +340,33 @@ public class MainActivity extends Activity {
                 boolean trusted = "https".equalsIgnoreCase(uri.getScheme())
                         && "github.com".equalsIgnoreCase(uri.getHost())
                         && uri.getPath() != null
-                        && uri.getPath().startsWith("/GreatDaniel93/hanok-ops/releases/");
+                        && uri.getPath().startsWith("/397024611/hanok-ops/releases/download/");
                 if (!trusted) return;
                 Intent intent = new Intent(Intent.ACTION_VIEW, uri);
                 startActivity(intent);
             } catch (Exception ignored) {
             }
         }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        NotificationPollJob.foreground = true;
+        if (webView != null) webView.evaluateJavascript("window.hydrateNativeSession && hydrateNativeSession(); window.refreshAll && refreshAll()", null);
+    }
+
+    @Override
+    protected void onPause() {
+        NotificationPollJob.foreground = false;
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (fileCallback != null) { fileCallback.onReceiveValue(null); fileCallback = null; }
+        if (webView != null) { webView.removeJavascriptInterface("AndroidApp"); webView.destroy(); webView = null; }
+        super.onDestroy();
     }
 
     @Override
@@ -335,11 +383,7 @@ public class MainActivity extends Activity {
                 ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                 if (results != null && !results.isEmpty()) {
                     String spoken = results.get(0);
-                    String safe = spoken.replace("\\", "\\\\")
-                            .replace("'", "\\'")
-                            .replace("\n", "\\n")
-                            .replace("\r", "");
-                    webView.evaluateJavascript("window.receiveVoiceCapture && receiveVoiceCapture('" + safe + "')", null);
+                    webView.evaluateJavascript("window.receiveVoiceCapture && receiveVoiceCapture(" + JSONObject.quote(spoken) + ")", null);
                 }
             }
             return;
@@ -362,7 +406,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) webView.goBack();
-        else super.onBackPressed();
+        if (webView == null) { super.onBackPressed(); return; }
+        webView.evaluateJavascript("window.handleAndroidBack ? handleAndroidBack() : false", handled -> {
+            if (!"true".equals(handled)) finish();
+        });
     }
 }

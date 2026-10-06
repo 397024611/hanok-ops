@@ -10,8 +10,8 @@ android {
         applicationId 'com.hanokgroup.ops'
         minSdk 24
         targetSdk 35
-        versionCode 10
-        versionName '0.8.2'
+        versionCode 11
+        versionName '0.8.3'
     }
 
     signingConfigs {
@@ -19,6 +19,7 @@ android {
             def ksPath = System.getenv("ANDROID_KEYSTORE_PATH")
             if (ksPath) {
                 storeFile file(ksPath)
+                storeType 'PKCS12'
                 storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword System.getenv("ANDROID_KEY_PASSWORD")
@@ -32,6 +33,10 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+
+    buildFeatures {
+        buildConfig true
     }
 
     compileOptions {

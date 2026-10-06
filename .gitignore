@@ -8,3 +8,8 @@ android/.signing/
 .gradle/
 local.properties
 **/build/
+
+# Local validation dependencies and outputs
+node_modules/
+tests/*.png
+__pycache__/
