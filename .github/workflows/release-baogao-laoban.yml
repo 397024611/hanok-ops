@@ -1,4 +1,4 @@
-name: Release Baogao Laoban APK
+name: Build signed Report Boss APK
 
 on:
   push:
@@ -6,21 +6,29 @@ on:
   workflow_dispatch:
 
 jobs:
-  release:
-    if: github.event_name != 'issues' || github.event.issue.title == 'TRIGGER_SIGNED_RELEASE'
+  build-signed-apk:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
 
     env:
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-      ANDROID_KEYSTORE_PATH: ../.signing/baogao-laoban-release.jks
+      ANDROID_KEYSTORE_PATH: ../.signing/baogao-laoban-release.p12
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Verify application flows
+        run: npm ci --ignore-scripts && npm run check && npm test
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -39,27 +47,41 @@ jobs:
           ANDROID_KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
         run: |
           set -euo pipefail
-          test -n "$ANDROID_KEYSTORE_B64"
-          test -n "$ANDROID_KEYSTORE_PASSWORD"
-          test -n "$ANDROID_KEY_ALIAS"
-          test -n "$ANDROID_KEY_PASSWORD"
-          mkdir -p android/.signing
-          printf '%s' "$ANDROID_KEYSTORE_B64" | tr -d '\r\n' | base64 --decode > android/.signing/baogao-laoban-release.jks
-          chmod 600 android/.signing/baogao-laoban-release.jks
+          for key in ANDROID_KEYSTORE_B64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD; do
+            if [ -z "${!key}" ]; then
+              echo "::error::Missing required repository secret: $key. Add the approved release signing identity before building."
+              exit 1
+            fi
+          done
+          install -d -m 700 android/.signing
+          printf '%s' "$ANDROID_KEYSTORE_B64" | tr -d '\r\n' | base64 --decode > android/.signing/baogao-laoban-release.p12
+          chmod 600 android/.signing/baogao-laoban-release.p12
 
       - name: Build signed release APK
         working-directory: android
-        run: gradle --no-daemon clean assembleRelease
+        run: ./gradlew --no-daemon clean assembleRelease
 
-      - name: Verify APK signature
+      - name: Verify signed APK identity
         shell: bash
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
           test -f "$APK"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -1)"
+          ZIPALIGN="$(find "$ANDROID_HOME/build-tools" -name zipalign -type f | sort -V | tail -1)"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -1)"
+          test -x "$APKSIGNER"
+          test -x "$ZIPALIGN"
+          test -x "$AAPT"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee signature.txt
-          grep -q "Signer #1 certificate SHA-256 digest: fb8caef222501c812fa49dbb18e173af3a86b71cc37a2f9e3f8e0061e5bbcf57" signature.txt
+          grep -q "Signer #1 certificate SHA-256 digest: cc4e046b6cec589ac00310ee4ea8f62506cfd45a44114e15c23875f4fdd9f92f" signature.txt
+          "$ZIPALIGN" -c 4 "$APK"
+          "$AAPT" dump badging "$APK" | tee apk-badging.txt
+          grep -Fq "package: name='com.hanokgroup.ops' versionCode='11' versionName='0.8.3'" apk-badging.txt
+          if grep -q 'application-debuggable' apk-badging.txt; then
+            echo "::error::Release APK must not be debuggable"
+            exit 1
+          fi
           sha256sum "$APK" | tee Baogao-Laoban-Release.sha256
           cp "$APK" Baogao-Laoban-Release.apk
 
@@ -83,24 +105,11 @@ jobs:
             Baogao-Laoban-Release.apk
             Baogao-Laoban-Release.sha256
             signature.txt
+            apk-badging.txt
           if-no-files-found: error
+          retention-days: 30
 
-      - name: Publish GitHub Release
+      - name: Remove temporary signing key
+        if: always()
         shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION_NAME: ${{ steps.version.outputs.name }}
-        run: |
-          set -euo pipefail
-          TAG="v$VERSION_NAME"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" Baogao-Laoban-Release.apk Baogao-Laoban-Release.sha256 signature.txt --clobber
-          else
-            gh release create "$TAG" \
-              Baogao-Laoban-Release.apk \
-              Baogao-Laoban-Release.sha256 \
-              signature.txt \
-              --target "$GITHUB_SHA" \
-              --title "报告老板 $TAG" \
-              --generate-notes
-          fi
+        run: rm -f android/.signing/baogao-laoban-release.p12

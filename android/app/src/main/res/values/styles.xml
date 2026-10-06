@@ -1,13 +1,13 @@
 <resources>
     <color name="navy">#071A29</color>
     <color name="gold">#B79253</color>
-    <style name="Theme.HanokOps" parent="android:style/Theme.Material.Light.NoActionBar">
+    <style name="Theme.HanokOps.Base" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:colorAccent">@color/gold</item>
         <item name="android:statusBarColor">@color/navy</item>
         <item name="android:navigationBarColor">@color/navy</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:windowNoTitle">true</item>
     </style>
+    <style name="Theme.HanokOps" parent="Theme.HanokOps.Base" />
 </resources>

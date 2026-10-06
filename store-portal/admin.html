@@ -4,17 +4,73 @@
 :root{--n:#071a29;--n2:#0d2c43;--g:#bd985d;--iv:#f7f3ec;--p:#fffdf9;--t:#142532;--m:#74808a;--l:#e4ddd3}
 *{box-sizing:border-box}body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--iv);color:var(--t)}
 .wrap{min-height:100vh;background:linear-gradient(160deg,var(--n),var(--n2) 320px,var(--iv) 320px);padding:34px 16px}.inner{max-width:620px;margin:auto}.brand{font:700 34px Georgia,serif;color:#fff}.tag{color:#9eb0bd;font-size:11px;letter-spacing:.12em;margin-top:4px}.card{background:var(--p);border:1px solid var(--l);border-radius:18px;padding:18px;margin-top:24px;box-shadow:0 12px 30px #23384a16}.card h2{margin:0 0 5px;font:700 22px Georgia,serif}.card p{margin:0 0 14px;color:var(--m);font-size:12px;line-height:1.5}label{display:block;font-size:11px;font-weight:800;margin:13px 0 7px}input,select{width:100%;border:1px solid #dcd4ca;border-radius:12px;padding:13px;background:#fff}.btn{width:100%;border:0;border-radius:12px;padding:14px;background:linear-gradient(135deg,#d0ae70,#936b39);color:#fff;font-weight:800;margin-top:16px}.out{margin-top:12px;font-size:12px;min-height:20px}.ok{color:#2e8058}.bad{color:#b83b48}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.logout{background:#fff;border:1px solid var(--l);color:#53616b}.note{background:#f7eddb;border-radius:12px;padding:11px;font-size:11px;color:#765d31;margin-top:12px}@media(max-width:520px){.row{grid-template-columns:1fr}}
+button:disabled{opacity:.65;cursor:wait}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #4f87c6;outline-offset:3px}
 </style></head><body><div class="wrap"><div class="inner"><div class="brand">报告老板</div><div class="tag">ADMIN  -  STORE ACCOUNT MANAGEMENT</div>
-<div id="login" class="card"><h2>Admin sign in</h2><p>Use your 报告老板 Admin account. Your password stays in this browser session and is not sent anywhere except Supabase Auth.</p>
-<label>Email</label><input id="email" type="email" value="Daniel.chen@hanokbbq.com.au"><label>Password</label><input id="pass" type="password"><button class="btn" onclick="signIn()">Sign in</button><div id="loginOut" class="out"></div></div>
-<div id="panel" class="card" style="display:none"><h2>Store accounts</h2><p>Create or reset a store login. Staff will use the store name as the username; the internal identity remains hidden.</p>
-<label>Store / Username</label><select id="store"><option value="HWD">Hanok Woden</option><option value="HWG">Hanok Wagga</option><option value="PDL">Pandan Leaf</option><option value="MTH">Meathouse</option><option value="BTD" selected>BBQTOWN Dickson</option></select>
-<label>Temporary password</label><input id="storePass" type="password" value="Hanok2026!">
+<form id="login" class="card" onsubmit="event.preventDefault();signIn()"><h2>Admin sign in</h2><p>Use your 报告老板 Admin account. Sign in to manage store accounts. Your sign-in password is sent only to Supabase Auth.</p>
+<label for="email">Email</label><input id="email" type="email" autocomplete="username" required><label for="pass">Password</label><input id="pass" type="password" autocomplete="current-password" required><button id="signInButton" class="btn" type="submit">Sign in</button><div id="loginOut" class="out" role="status"></div></form>
+<form id="panel" class="card" style="display:none" onsubmit="event.preventDefault();saveStore()"><h2>Store accounts</h2><p>Create or reset a store login. Staff will use the store name as the username; the internal identity remains hidden.</p>
+<label for="store">Store / Username</label><select id="store"><option value="HWD">Hanok Woden</option><option value="HWG">Hanok Wagga</option><option value="PDL">Pandan Leaf</option><option value="MTH">Meathouse</option><option value="BTD" selected>BBQTOWN Dickson</option></select>
+<label for="storePass">Temporary password</label><input id="storePass" type="password" autocomplete="new-password" minlength="8" required>
 <div class="note">Recommended: use a different password for each store before rollout. Minimum 8 characters.</div>
-<button class="btn" onclick="saveStore()">Create / Reset Store Account</button><button class="btn logout" onclick="logout()">Sign out</button><div id="out" class="out"></div></div>
+<button id="saveButton" class="btn" type="submit">Create / Reset Store Account</button><button class="btn logout" type="button" onclick="logout()">Sign out</button><div id="out" class="out" role="status"></div></form>
 </div></div><script>
-const URL="https://tqfwbsjchespjkxliodo.supabase.co",KEY="sb_publishable_gzlaNquJPCOsgVMb1ZhRdw_X38GSi6s";let session=null;
-async function signIn(){const o=document.getElementById("loginOut");o.className="out";o.textContent="Signing in...";try{const r=await fetch(URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":KEY,"Content-Type":"application/json"},body:JSON.stringify({email:document.getElementById("email").value.trim(),password:document.getElementById("pass").value})});const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.message||"Sign in failed");session=j;const p=await fetch(URL+"/rest/v1/ops_profiles?user_id=eq."+j.user.id+"&select=role,display_name",{headers:{"apikey":KEY,"Authorization":"Bearer "+j.access_token}});const a=await p.json();if(!a[0]||a[0].role!=="admin")throw new Error("This account is not an Admin.");document.getElementById("login").style.display="none";document.getElementById("panel").style.display="block"}catch(e){o.className="out bad";o.textContent=e.message}}
-async function saveStore(){const o=document.getElementById("out"),pwd=document.getElementById("storePass").value,code=document.getElementById("store").value;o.className="out";o.textContent="Saving...";if(!session){o.className="out bad";o.textContent="Sign in again.";return}if(pwd.length<8){o.className="out bad";o.textContent="Password must be at least 8 characters.";return}try{const r=await fetch(URL+"/functions/v1/ops-admin-store-user",{method:"POST",headers:{"apikey":KEY,"Authorization":"Bearer "+session.access_token,"Content-Type":"application/json"},body:JSON.stringify({storeCode:code,password:pwd})});const j=await r.json();if(!r.ok)throw new Error(j.error||j.message||"Could not save account");o.className="out ok";o.textContent=j.username+" is ready."}catch(e){o.className="out bad";o.textContent=e.message}}
-function logout(){session=null;document.getElementById("pass").value="";document.getElementById("panel").style.display="none";document.getElementById("login").style.display="block";document.getElementById("loginOut").textContent=""}
+const URL="https://tqfwbsjchespjkxliodo.supabase.co",KEY="sb_publishable_gzlaNquJPCOsgVMb1ZhRdw_X38GSi6s";
+let session=null,epoch=0,controller=new AbortController(),signingIn=false,saving=false,refreshPromise=null;
+const el=id=>document.getElementById(id);
+function aborted(){return new DOMException("Signed out.","AbortError")}
+async function readJSON(r){try{return await r.json()}catch{return{}}}
+async function refresh(){
+  if(refreshPromise)return refreshPromise;
+  const ownEpoch=epoch,token=session?.refresh_token;
+  if(!token){logout(false);el("loginOut").textContent="Your session expired. Please sign in again.";throw new Error("Please sign in again.")}
+  const pending=(async()=>{
+    const r=await fetch(URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",signal:AbortSignal.any([controller.signal,AbortSignal.timeout(30000)]),headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:token})});
+    const data=await readJSON(r);if(ownEpoch!==epoch)throw aborted();
+    if(!r.ok){if([400,401,403].includes(r.status)){logout(false);el("loginOut").textContent="Your session expired. Please sign in again."}throw new Error("Could not renew your session. Please try signing in again.")}
+    if(!data?.access_token||!data?.user?.id)throw new Error("Invalid session response.");session=data;
+  })();refreshPromise=pending;
+  try{await pending}finally{if(refreshPromise===pending)refreshPromise=null}
+}
+async function request(path,options={}){
+  const ownEpoch=epoch,signal=AbortSignal.any([controller.signal,AbortSignal.timeout(30000)]);
+  for(let attempt=0;attempt<2;attempt++){
+    if(ownEpoch!==epoch||!session)throw aborted();const token=session.access_token;
+    const r=await fetch(URL+path,{...options,signal,headers:{apikey:KEY,...(options.headers||{}),Authorization:"Bearer "+token}});
+    const data=await readJSON(r);if(ownEpoch!==epoch)throw aborted();
+    if(r.status===401){if(attempt===1){logout(false);el("loginOut").textContent="Your session expired. Please sign in again.";throw new Error("Please sign in again.")}if(session.access_token===token)await refresh();continue}
+    if(!r.ok)throw new Error(data.error||data.error_description||data.message||"Request failed ("+r.status+").");return data;
+  }
+}
+async function signIn(){
+  if(signingIn)return;const email=el("email").value.trim(),password=el("pass").value,o=el("loginOut");
+  if(!email||!password){o.className="out bad";o.textContent="Enter your email and password.";return}
+  const ownEpoch=epoch;signingIn=true;el("signInButton").disabled=true;o.className="out";o.textContent="Signing in...";
+  try{
+    const r=await fetch(URL+"/auth/v1/token?grant_type=password",{method:"POST",signal:AbortSignal.any([controller.signal,AbortSignal.timeout(30000)]),headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password})});
+    const j=await readJSON(r);if(ownEpoch!==epoch)throw aborted();if(!r.ok)throw new Error(j.error_description||j.message||"Sign in failed");if(!j?.access_token||!j?.user?.id)throw new Error("Invalid sign-in response.");
+    session=j;const profiles=await request("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(j.user.id)+"&select=role,display_name");if(ownEpoch!==epoch)throw aborted();
+    if(!profiles?.[0]||profiles[0].role!=="admin")throw new Error("This account is not an Admin.");
+    el("pass").value="";el("login").style.display="none";el("panel").style.display="block";el("store").focus();
+  }catch(e){if(ownEpoch===epoch&&e.name!=="AbortError"){session=null;o.className="out bad";o.textContent=e.message;el("pass").value=""}}
+  finally{if(ownEpoch===epoch){signingIn=false;el("signInButton").disabled=false}}
+}
+async function saveStore(){
+  if(saving)return;const o=el("out"),password=el("storePass").value,storeCode=el("store").value;
+  if(!session){o.className="out bad";o.textContent="Sign in again.";return}
+  if(password.length<8){o.className="out bad";o.textContent="Password must be at least 8 characters.";return}
+  const ownEpoch=epoch;saving=true;el("saveButton").disabled=true;el("store").disabled=true;el("storePass").disabled=true;o.className="out";o.textContent="Saving...";
+  try{
+    const result=await request("/functions/v1/ops-admin-store-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({storeCode,password})});
+    if(ownEpoch!==epoch)return;if(!result.ok||!result.username)throw new Error("The server did not confirm the account is ready.");
+    o.className="out ok";o.textContent=result.username+" is ready.";el("storePass").value="";
+  }catch(e){if(ownEpoch===epoch&&e.name!=="AbortError"){o.className="out bad";o.textContent="Could not confirm the account update. "+e.message+" Retry with the same store and password if needed."}}
+  finally{if(ownEpoch===epoch){saving=false;el("saveButton").disabled=false;el("store").disabled=false;el("storePass").disabled=false}}
+}
+function logout(revoke=true){
+  const token=session?.access_token;epoch++;controller.abort();controller=new AbortController();session=null;refreshPromise=null;signingIn=false;saving=false;
+  for(const id of ["pass","storePass"])el(id).value="";
+  for(const id of ["signInButton","saveButton","store","storePass"])el(id).disabled=false;
+  el("panel").style.display="none";el("login").style.display="block";el("loginOut").textContent="";el("out").textContent="";el("email").focus();
+  if(revoke&&token)fetch(URL+"/auth/v1/logout?scope=local",{method:"POST",headers:{apikey:KEY,Authorization:"Bearer "+token},signal:AbortSignal.timeout(10000)}).catch(()=>{});
+}
 </script></body></html>

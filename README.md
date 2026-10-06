@@ -4,7 +4,7 @@ Internal operations system for Hanok Group.
 
 ## Current version
 
-**报告老板 Android App v0.8.1**
+**报告老板 Android App v0.8.3 (local candidate; not released)**
 
 The HQ app is designed around the owner's daily operating workflow rather than a generic task list.
 
@@ -80,7 +80,7 @@ Stages:
 - Opening
 - Live
 
-A project can have a location before it is linked to an operating store. Project data is currently stored on the HQ device while the Hanok Ops Supabase project remains unavailable to the connected schema-management account.
+A project can have a location before it is linked to an operating store. Project data is stored only on the HQ device and is not yet synchronized across devices.
 
 ### Inbox
 
@@ -109,3 +109,9 @@ Stores use the web portal to submit and track issues. Store users do not need th
 - BBQTOWN Dickson (BTD)
 
 This repository is independent from individual store repositories.
+
+## Validation and release
+
+Run `npm ci --ignore-scripts && npm run check && npm test` for mocked client regression checks. With JDK 17 and Android SDK 35 installed, run `cd android && ./gradlew --no-daemon assembleDebug lintDebug`.
+
+The 0.8.3 candidate is not deployed or released. A locally signed APK exists under the new release identity documented in `docs/ANDROID-SIGNING.md`; the private key is not stored in this repository. The public workflows run offline client regression tests plus Android compilation and lint. Live-service, account, deployment, and real-device validation are separate from this public source candidate. Never distribute a debug APK as a production update.

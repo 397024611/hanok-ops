@@ -12,48 +12,227 @@
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;box-shadow:0 8px 24px #25364709}.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}.ticket{position:relative}.ticket h3{font-size:15px;margin:9px 0 5px}.ticket p{font-size:12px;color:#697680;line-height:1.4;margin:0;padding-right:18px}.ticketNo{font-size:10px;color:#8a949b}.age{font-size:10px;color:#8b949b}.chev{position:absolute;right:14px;bottom:18px;color:#98a2aa}.pill{display:inline-flex;padding:4px 8px;border-radius:999px;font-size:10px;font-weight:800}.pill.red{background:#ffe7ea;color:#bd3343}.pill.blue{background:#e9f2ff;color:#2e6fac}.pill.gold{background:#f9edd9;color:#9a6620}.pill.green{background:#e7f5ec;color:#287c55}.pill.gray{background:#edf0f2;color:#65717b}.empty{text-align:center;color:#8c969e;padding:48px 20px}
 .overlay{position:fixed;z-index:20;inset:0;background:#071a29;display:none;overflow:auto}.overlay.show{display:block}.overlayTop{color:white;display:flex;align-items:center;justify-content:space-between;padding:calc(20px + env(safe-area-inset-top)) 16px 14px}.overlayTop button{border:0;background:none;color:white;font-size:24px}.sheet{background:var(--ivory);min-height:calc(100vh - 58px);border-radius:23px 23px 0 0;padding:16px 14px 32px}.sheetInner{max-width:720px;margin:auto}.detailCard{background:white;border:1px solid var(--line);border-radius:18px;padding:16px}.detailCard h1{font:700 25px Georgia,serif;margin:10px 0 5px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:#f4f1ec;border-radius:13px;padding:11px;margin:14px 0;font-size:11px}.meta b{display:block;font-size:10px;color:#77828a;margin-bottom:3px}.desc{font-size:13px;line-height:1.55;color:#5d6b75}.timeline{margin-top:18px}.tl{display:grid;grid-template-columns:12px 1fr auto;gap:7px;margin:12px 0;font-size:10px}.tl i{width:7px;height:7px;background:var(--gold);border-radius:50%;margin-top:4px}.tl strong{display:block;font-size:11px}.tl span{color:#8a949b}.comment{background:#f5f2ed;border-radius:11px;padding:10px 11px;margin-top:8px}.comment b{font-size:10px}.comment p{margin:4px 0 0;font-size:12px;color:#65717a}.attachments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0}.attachment{border:1px solid var(--line);background:#f7f4ef;border-radius:12px;overflow:hidden;min-height:72px;display:grid;place-items:center}.attachment img{width:100%;height:140px;object-fit:cover;display:block}.attachment button{width:100%;height:100%;min-height:72px;border:0;background:#f4f0e9;color:#42515c;font-weight:800;font-size:11px}.reopenBox{margin-top:14px;background:#fff4e3;border:1px solid #ead5ad;border-radius:13px;padding:12px}.reopenBox b{font-size:11px}.reopenBox p{font-size:11px;color:#765f39;margin:5px 0 0}.form label{display:block;font-size:11px;font-weight:850;margin:13px 0 7px}.form input,.form textarea,.form select{width:100%;border:1px solid #ded7ce;background:white;border-radius:12px;padding:13px;outline:none}.form textarea{min-height:100px;resize:none}.secondary{width:100%;border:1px solid #d8d1c8;background:white;color:#263846;border-radius:12px;padding:13px;font-weight:800;margin-top:9px}.toast{position:fixed;z-index:99;left:50%;bottom:30px;transform:translateX(-50%);background:#0b2538;color:white;padding:11px 16px;border-radius:999px;font-size:11px;opacity:0;pointer-events:none;transition:.2s;max-width:85%;text-align:center}.toast.show{opacity:1}.loading{position:fixed;z-index:100;inset:0;background:#071a29cc;display:none;place-items:center}.loading.show{display:grid}.spin{width:34px;height:34px;border:3px solid #ffffff28;border-top-color:#d6b77a;border-radius:50%;animation:s .8s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
 @media(min-width:700px){.top{padding-bottom:34px}.main{margin-top:-18px}.loginCard{padding:26px}}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:3px}button:disabled{cursor:wait;opacity:.65}fieldset{border:0;margin:0;padding:0;min-width:0}.formNote{font-size:12px;color:#65717a;line-height:1.5}.ticket{display:block;text-align:left;width:100%;color:inherit}.attachment video{width:100%;max-height:260px}.attachment.expanded{grid-column:1/-1}.attachment.expanded img{height:auto;max-height:80vh;object-fit:contain}.attachment a{display:block;width:100%;color:#263846}.attachment{font-size:11px}.overlayTop>span{width:24px}@media(prefers-reduced-motion:reduce){.spin{animation:none}.toast{transition:none}}
 </style></head>
-<body><div id="app"></div><div id="overlay" class="overlay"></div><div id="toast" class="toast"></div><div id="loading" class="loading"><div class="spin"></div></div>
+<body><div id="app"></div><div id="overlay" class="overlay"></div><div id="toast" class="toast" role="status" aria-live="polite"></div><div id="loading" class="loading" role="status" aria-label="Loading"><div class="spin"></div></div>
 <script>
 const SB_URL="https://tqfwbsjchespjkxliodo.supabase.co";
 const SB_KEY="sb_publishable_gzlaNquJPCOsgVMb1ZhRdw_X38GSi6s";
-const STORES=[
-  {code:"HWD",name:"Hanok Woden"},
-  {code:"HWG",name:"Hanok Wagga"},
-  {code:"PDL",name:"Pandan Leaf"},
-  {code:"MTH",name:"Meathouse"},
-  {code:"BTD",name:"BBQTOWN Dickson"}
-];
-let session=JSON.parse(localStorage.getItem("hanok_store_session")||"null"),profile=null,store=null,tickets=[],filter="open",timer=null;
+const STORES=[{code:"HWD",name:"Hanok Woden"},{code:"HWG",name:"Hanok Wagga"},{code:"PDL",name:"Pandan Leaf"},{code:"MTH",name:"Meathouse"},{code:"BTD",name:"BBQTOWN Dickson"}];
+const CATEGORIES=["Maintenance","Supplier / Stock","IT / POS","Marketing","HR / Staff","Finance","Landlord / Centre","Health & Safety","Other"];
+const SESSION_KEY="hanok_store_session", PAGE_SIZE=150, MAX_FILE_SIZE=52428800;
+let session=null,profile=null,store=null,tickets=[],filter="open",timer=null;
+let authEpoch=0,authController=new AbortController(),refreshPromise=null,loginBusy=false,loadingCount=0;
+let listSequence=0,listBusy=false,view=null,viewSequence=0,returnFocus=null,draft=null,toastTimer=null,syncError=false;
 const app=document.getElementById("app"),overlay=document.getElementById("overlay");
-function showLoading(v){document.getElementById("loading").className="loading"+(v?" show":"")}
-function toast(t){const x=document.getElementById("toast");x.textContent=t;x.classList.add("show");setTimeout(()=>x.classList.remove("show"),1700)}
+try{const saved=JSON.parse(localStorage.getItem(SESSION_KEY)||"null");if(saved?.access_token&&saved?.refresh_token&&saved?.user?.id)session=saved;else localStorage.removeItem(SESSION_KEY)}catch{try{localStorage.removeItem(SESSION_KEY)}catch{}}
+function persistSession(){try{if(session)localStorage.setItem(SESSION_KEY,JSON.stringify(session));else localStorage.removeItem(SESSION_KEY)}catch{/* Private browsing may disable storage; the current session still works. */}}
+function cancelled(){return new DOMException("This screen is no longer active.","AbortError")}
+function active(epoch){return epoch===authEpoch&&!!session}
+function isCurrent(v){return view===v&&active(v.epoch)}
+function loading(){const epoch=authEpoch;loadingCount++;document.getElementById("loading").classList.add("show");return()=>{if(epoch!==authEpoch)return;loadingCount=Math.max(0,loadingCount-1);document.getElementById("loading").classList.toggle("show",loadingCount>0)}}
+function toast(t){const x=document.getElementById("toast");clearTimeout(toastTimer);x.textContent=t;x.classList.add("show");toastTimer=setTimeout(()=>x.classList.remove("show"),5000)}
 function h(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function fmt(s){if(!s)return"-";return new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}).format(new Date(s))}
-function age(s){const m=(Date.now()-new Date(s))/60000;if(m<2)return"Just now";if(m<60)return Math.floor(m)+"m ago";if(m<1440)return Math.floor(m/60)+"h ago";return Math.floor(m/1440)+"d ago"}
-function statusLabel(s){return({new:"New",accepted:"Accepted",in_progress:"In Progress",waiting:"Waiting",completed:"Completed"})[s]||s}
-function cls(t){if(t.priority==="urgent"&&t.status!=="completed")return"red";if(t.status==="waiting")return"gold";if(t.status==="completed")return"green";return"blue"}
-function internalEmail(code){return "store."+code.toLowerCase()+"@hanokops.invalid"}
-function headers(extra={}){return {"apikey":SB_KEY,"Authorization":"Bearer "+session.access_token,...extra}}
-async function refresh(){if(!session?.refresh_token)return false;try{const r=await fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:session.refresh_token})});if(!r.ok)throw 0;session=await r.json();localStorage.setItem("hanok_store_session",JSON.stringify(session));return true}catch{logout();return false}}
-async function api(path,opts={}){const r=await fetch(SB_URL+path,{...opts,headers:{...headers(),...(opts.headers||{})}});if(r.status===401&&await refresh())return api(path,opts);if(!r.ok){let j={};try{j=await r.json()}catch{}throw new Error(j.message||j.error_description||j.details||"Request failed")}if(r.status===204)return null;const t=await r.text();return t?JSON.parse(t):null}
-function loginPage(){app.innerHTML='<div class="login"><div class="loginWrap"><div class="eyebrow">STORE PORTAL</div><div class="brand">报告老板</div><div class="tag">Report issues. Track progress. Stay informed.</div><div class="loginCard"><h2>Store sign in</h2><p>Select your store and enter the store password.</p><label class="field">STORE / USERNAME</label><select id="storeSel">'+STORES.map(s=>'<option value="'+s.code+'">'+s.name+'</option>').join("")+'</select><label class="field">PASSWORD</label><input id="pwd" type="password" autocomplete="current-password" placeholder="Store password"><div id="err" class="error"></div><button class="primary" onclick="login()">Sign in</button></div><div class="loginFoot">Hanok Group  -  Internal Operations</div></div></div>'}
-async function login(){const code=document.getElementById("storeSel").value,p=document.getElementById("pwd").value,e=document.getElementById("err");e.textContent="";if(!p){e.textContent="Enter the store password.";return}showLoading(true);try{const r=await fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",headers:{"apikey":SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:internalEmail(code),password:p})});const j=await r.json();if(!r.ok)throw new Error("Incorrect store or password.");session=j;localStorage.setItem("hanok_store_session",JSON.stringify(session));await boot()}catch(x){e.textContent=x.message}finally{showLoading(false)}}
-function logout(){clearInterval(timer);session=null;profile=null;store=null;tickets=[];localStorage.removeItem("hanok_store_session");loginPage()}
-async function boot(){if(!session){loginPage();return}showLoading(true);try{const ps=await api("/rest/v1/ops_profiles?user_id=eq."+session.user.id+"&select=user_id,display_name,role,store_id");profile=ps?.[0];if(!profile||profile.role!=="store"||!profile.store_id)throw new Error("This account is not assigned to a store.");const ss=await api("/rest/v1/ops_stores?id=eq."+profile.store_id+"&select=id,code,name,active");store=ss?.[0];if(!store)throw new Error("Store not found.");await loadTickets();clearInterval(timer);timer=setInterval(()=>loadTickets(true),10000)}catch(e){toast(e.message);logout()}finally{showLoading(false)}}
-async function loadTickets(silent=false){try{tickets=await api("/rest/v1/ops_tickets?select=id,ticket_no,title,description,reported_by,category,priority,status,due_at,follow_up_at,waiting_reason,resolution,created_at,updated_at&order=created_at.desc&limit=150")||[];render()}catch(e){if(!silent)toast(e.message)}}
-function card(t){return '<div class="card ticket" onclick="detail(\''+t.id+'\')"><div class="row between"><div class="row"><span class="pill '+cls(t)+'">'+(t.priority==="urgent"&&t.status!=="completed"?"Urgent":statusLabel(t.status))+'</span><span class="ticketNo">'+store.code+'-'+String(t.ticket_no||0).padStart(5,"0")+'</span></div><span class="age">'+age(t.created_at)+'</span></div><h3>'+h(t.title)+'</h3><p>'+h(t.description||t.category)+'</p><span class="chev">></span></div>'}
-function render(){if(!session||!store){loginPage();return}let arr=tickets;if(filter==="open")arr=tickets.filter(t=>t.status!=="completed");if(filter==="waiting")arr=tickets.filter(t=>t.status==="waiting");if(filter==="completed")arr=tickets.filter(t=>t.status==="completed");app.innerHTML='<div class="shell"><div class="top"><div class="topInner"><div class="topRow"><div><div class="storeName">'+h(store.name)+'</div><div class="portalTag">报告老板  -  STORE PORTAL</div></div><button class="logout" onclick="logout()">Sign out</button></div><div class="hello">Store operations</div><div class="sub">Report an issue and track HQ progress here.</div><div class="sync"><i></i> Connected  -  auto-sync every 10s</div></div></div><main class="main"><div class="report"><div><h2>Report an issue</h2><p>Maintenance, stock, IT, staff, landlord and more.</p></div><button class="plus" onclick="newTicket()">+</button></div><div class="tabs">'+["open","waiting","completed"].map(x=>'<button class="'+(filter===x?"active":"")+'" onclick="filter=\''+x+'\';render()">'+x[0].toUpperCase()+x.slice(1)+'</button>').join("")+'</div><div class="sectionTitle">My Tickets</div>'+(arr.length?arr.map(card).join(""):'<div class="empty">No tickets in this section.</div>')+'</main></div>'}
-function closeOverlay(){overlay.className="overlay";overlay.innerHTML=""}
-function newTicket(){overlay.className="overlay show";overlay.innerHTML='<div class="overlayTop"><button onclick="closeOverlay()"><</button><b>Report Issue</b><button></button></div><div class="sheet"><div class="sheetInner form"><div class="detailCard"><label>Reported by</label><input id="reportedBy" maxlength="100" placeholder="Your name, e.g. Jack"><label>Category</label><select id="cat">'+["Maintenance","Supplier / Stock","IT / POS","Marketing","HR / Staff","Finance","Landlord / Centre","Health & Safety","Other"].map(x=>'<option>'+x+'</option>').join("")+'</select><label>Title</label><input id="title" placeholder="What needs attention?"><label>Description</label><textarea id="desc" placeholder="Tell HQ what happened and what you need."></textarea><label>Priority</label><select id="pri"><option value="normal">Normal</option><option value="urgent">Urgent</option></select><label>Photo / Video</label><input id="file" type="file" accept="image/*,video/*"><button class="primary" onclick="createTicket()">Submit to HQ</button></div></div></div>'}
-async function upload(ticketId,file){if(!file)return;const clean=file.name.replace(/[^a-zA-Z0-9._-]/g,"_"),path=ticketId+"/"+Date.now()+"_"+clean;const r=await fetch(SB_URL+"/storage/v1/object/ops-ticket-attachments/"+encodeURI(path),{method:"POST",headers:{...headers({"Content-Type":file.type||"application/octet-stream","x-upsert":"false"})},body:file});if(!r.ok)throw new Error("Attachment upload failed");await api("/rest/v1/ops_ticket_attachments",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({ticket_id:ticketId,uploaded_by:session.user.id,storage_path:path,file_name:file.name,mime_type:file.type,size_bytes:file.size})})}
-async function createTicket(){const title=document.getElementById("title").value.trim();if(!title){toast("Add a title.");return}showLoading(true);try{const created=await api("/rest/v1/ops_tickets",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=representation"},body:JSON.stringify({store_id:store.id,created_by:session.user.id,title,description:document.getElementById("desc").value.trim(),reported_by:(document.getElementById("reportedBy").value.trim()||null),category:document.getElementById("cat").value,priority:document.getElementById("pri").value})});const file=document.getElementById("file").files[0];if(file&&created?.[0])await upload(created[0].id,file);closeOverlay();await loadTickets();toast("Issue sent to HQ.")}catch(e){toast(e.message)}finally{showLoading(false)}}
-async function detail(id){const t=tickets.find(x=>x.id===id);if(!t)return;overlay.className="overlay show";overlay.innerHTML='<div class="overlayTop"><button onclick="closeOverlay()"><</button><b>Ticket Detail</b><button></button></div><div class="sheet"><div class="sheetInner"><div class="detailCard"><div class="row between"><span class="pill '+cls(t)+'">'+(t.priority==="urgent"&&t.status!=="completed"?"Urgent":statusLabel(t.status))+'</span><span class="ticketNo">'+store.code+'-'+String(t.ticket_no||0).padStart(5,"0")+'</span></div><h1>'+h(t.title)+'</h1><p class="desc">'+h(t.description||"No description.")+'</p><div class="meta"><div><b>CATEGORY</b>'+h(t.category)+'</div><div><b>REPORTED BY</b>'+h(t.reported_by||"-")+'</div><div><b>STATUS</b>'+statusLabel(t.status)+'</div><div><b>CREATED</b>'+fmt(t.created_at)+'</div><div><b>DUE</b>'+fmt(t.due_at)+'</div></div>'+(t.status==="waiting"?'<div class="card" style="background:#fbf0df"><b style="font-size:11px">Waiting</b><p style="font-size:12px;margin:5px 0 0;color:#7c622f">'+h(t.waiting_reason||"HQ follow-up pending")+(t.follow_up_at?"  -  "+fmt(t.follow_up_at):"")+'</p></div>':"")+(t.status==="completed"&&t.resolution?'<div class="card" style="background:#eaf6ee"><b style="font-size:11px">Resolution</b><p style="font-size:12px;margin:5px 0 0;color:#426c55">'+h(t.resolution)+'</p></div>':"")+'<div id="attachmentsWrap"><b>Attachments</b><div id="attachments" class="attachments"><div class="empty" style="padding:12px">Loading...</div></div></div><div id="reopenWrap"></div><div id="events" class="timeline"><b>Timeline</b><div class="empty" style="padding:18px">Loading...</div></div><div id="comments"><b>Comments</b><div class="empty" style="padding:18px">Loading...</div></div><div class="form"><label>Add comment</label><textarea id="comment" placeholder="Add an update for HQ..."></textarea><button class="secondary" onclick="comment(\''+id+'\')">Post comment</button></div></div></div></div>';try{const [ev,co,at,rr]=await Promise.all([api("/rest/v1/ops_ticket_events?ticket_id=eq."+id+"&select=id,event_type,message,created_at&order=created_at.asc"),api("/rest/v1/ops_ticket_comments?ticket_id=eq."+id+"&select=id,body,created_at&order=created_at.asc"),api("/rest/v1/ops_ticket_attachments?ticket_id=eq."+id+"&select=id,storage_path,file_name,mime_type,created_at&order=created_at.asc"),api("/rest/v1/ops_reopen_requests?ticket_id=eq."+id+"&select=id,reason,status,created_at,reviewed_at&order=created_at.desc")]);document.getElementById("events").innerHTML='<b>Timeline</b>'+(ev?.length?ev.map(e=>'<div class="tl"><i></i><div><strong>'+h(e.message||e.event_type)+'</strong><span>'+h(e.event_type.replaceAll("_"," "))+'</span></div><span>'+fmt(e.created_at)+'</span></div>').join(""):'<div class="empty" style="padding:18px">No events yet.</div>');document.getElementById("comments").innerHTML='<b>Comments</b>'+(co?.length?co.map(c=>'<div class="comment"><b>'+fmt(c.created_at)+'</b><p>'+h(c.body)+'</p></div>').join(""):'<div class="empty" style="padding:18px">No comments yet.</div>');await renderAttachments(at||[]);if(t.status==="completed")renderReopen(id,rr||[])}catch(e){toast(e.message)}}
-async function renderAttachments(list){const box=document.getElementById("attachments");if(!box)return;if(!list.length){box.innerHTML='<div style="font-size:11px;color:#8c969e">No attachments.</div>';return}box.innerHTML="";for(const a of list){const el=document.createElement("div");el.className="attachment";if((a.mime_type||"").startsWith("image/")){el.innerHTML='<button>Loading image...</button>';try{const r=await fetch(SB_URL+"/storage/v1/object/authenticated/ops-ticket-attachments/"+encodeURI(a.storage_path),{headers:headers()});if(!r.ok)throw 0;const b=await r.blob(),u=URL.createObjectURL(b);el.innerHTML='<img alt="'+h(a.file_name)+'">';el.querySelector("img").src=u;el.onclick=()=>window.open(u,"_blank")}catch{el.innerHTML='<button>Could not load '+h(a.file_name)+'</button>'}}else{el.innerHTML='<button>Play  '+h(a.file_name)+'</button>';el.onclick=()=>openAttachment(a)}box.appendChild(el)}}
-async function openAttachment(a){showLoading(true);try{const r=await fetch(SB_URL+"/storage/v1/object/authenticated/ops-ticket-attachments/"+encodeURI(a.storage_path),{headers:headers()});if(!r.ok)throw new Error("Could not open attachment");const b=await r.blob(),u=URL.createObjectURL(b);window.open(u,"_blank")}catch(e){toast(e.message)}finally{showLoading(false)}}
-function renderReopen(id,list){const box=document.getElementById("reopenWrap");if(!box)return;const pending=list.find(x=>x.status==="pending");if(pending){box.innerHTML='<div class="reopenBox"><b>Reopen requested</b><p>'+h(pending.reason)+'  -  Waiting for HQ review.</p></div>';return}box.innerHTML='<div class="reopenBox"><b>Still not resolved?</b><p>If the issue remains after completion, ask HQ to reopen this ticket.</p><button class="secondary" onclick="reopenForm(\''+id+'\')">Issue not resolved</button></div>'}
-function reopenForm(id){overlay.innerHTML='<div class="overlayTop"><button onclick="detail(\''+id+'\')"><</button><b>Request Reopen</b><button></button></div><div class="sheet"><div class="sheetInner form"><div class="detailCard"><label>What is still wrong?</label><textarea id="reopenReason" placeholder="Explain why this issue is not resolved."></textarea><button class="primary" onclick="requestReopen(\''+id+'\')">Send to HQ</button></div></div></div>'}
-async function requestReopen(id){const reason=document.getElementById("reopenReason").value.trim();if(reason.length<3){toast("Please add a short reason.");return}showLoading(true);try{await api("/rest/v1/ops_reopen_requests",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({ticket_id:id,store_id:store.id,requested_by:session.user.id,reason})});await detail(id);toast("Reopen request sent to HQ.")}catch(e){toast(e.message)}finally{showLoading(false)}}
-async function comment(id){const body=document.getElementById("comment").value.trim();if(!body)return;showLoading(true);try{await api("/rest/v1/ops_ticket_comments",{method:"POST",headers:{"Content-Type":"application/json","Prefer":"return=minimal"},body:JSON.stringify({ticket_id:id,author_id:session.user.id,body})});await detail(id);toast("Comment added.")}catch(e){toast(e.message)}finally{showLoading(false)}}
+function fmt(s){const d=new Date(s);return s&&Number.isFinite(d.getTime())?new Intl.DateTimeFormat("en-AU",{day:"numeric",month:"short",hour:"numeric",minute:"2-digit"}).format(d):"-"}
+function age(s){const d=new Date(s).getTime();if(!Number.isFinite(d))return"-";const m=Math.max(0,(Date.now()-d)/60000);return m<2?"Just now":m<60?Math.floor(m)+"m ago":m<1440?Math.floor(m/60)+"h ago":Math.floor(m/1440)+"d ago"}
+function statusLabel(s){return({new:"New",accepted:"Accepted",in_progress:"In Progress",waiting:"Waiting",completed:"Completed"})[s]||s||"Unknown"}
+function cls(t){return t.priority==="urgent"&&t.status!=="completed"?"red":t.status==="waiting"?"gold":t.status==="completed"?"green":"blue"}
+function internalEmail(code){return"store."+code.toLowerCase()+"@hanokops.invalid"}
+async function errorFor(r){let j={};try{j=await r.json()}catch{}const e=new Error(j.message||j.error_description||j.error||j.details||"Request failed ("+r.status+").");e.status=r.status;e.code=j.code;return e}
+// Refresh-token rotation must be single-flight. A request retries authorization once only.
+async function refresh(){
+  if(refreshPromise)return refreshPromise;
+  if(!session?.refresh_token)throw new Error("Please sign in again.");
+  const epoch=authEpoch,token=session.refresh_token;
+  const pending=(async()=>{
+    const r=await fetch(SB_URL+"/auth/v1/token?grant_type=refresh_token",{method:"POST",signal:AbortSignal.any([authController.signal,AbortSignal.timeout(30000)]),headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({refresh_token:token})});
+    if(!active(epoch))throw cancelled();
+    if(!r.ok){const e=await errorFor(r);if([400,401,403].includes(r.status)){logout(false);toast("Your session expired. Please sign in again.")}throw e}
+    const next=await r.json();if(!active(epoch))throw cancelled();
+    if(!next?.access_token||!next?.refresh_token||!next?.user?.id)throw new Error("Could not renew the session. Please sign in again.");
+    session=next;persistSession();return true;
+  })();
+  refreshPromise=pending;
+  try{return await pending}finally{if(refreshPromise===pending)refreshPromise=null}
+}
+async function request(path,opts={}){
+  const epoch=authEpoch,signal=AbortSignal.any([authController.signal,AbortSignal.timeout(opts.body instanceof File?300000:30000),...(opts.signal?[opts.signal]:[])]);
+  for(let attempt=0;attempt<2;attempt++){
+    if(!active(epoch)||signal.aborted)throw cancelled();
+    const token=session.access_token;
+    const r=await fetch(SB_URL+path,{...opts,signal,headers:{apikey:SB_KEY,...(opts.headers||{}),Authorization:"Bearer "+token}});
+    if(!active(epoch)||signal.aborted)throw cancelled();
+    if(r.status===401){
+      if(attempt===1){logout(false);toast("Please sign in again.");throw new Error("Your session is no longer authorized.")}
+      // A parallel request may already have refreshed this token.
+      if(session.access_token===token)await refresh();
+      continue;
+    }
+    if(!r.ok)throw await errorFor(r);
+    return r;
+  }
+}
+async function api(path,opts={}){const r=await request(path,opts);if(r.status===204)return null;const text=await r.text();return text?JSON.parse(text):null}
+// Stable client IDs allow a retry to reconcile a committed write after a lost response.
+async function insertOnce(table,payload){
+  try{const rows=await api("/rest/v1/"+table,{method:"POST",headers:{"Content-Type":"application/json",Prefer:"return=representation"},body:JSON.stringify(payload)});if(rows?.[0])return rows[0];throw new Error("No confirmation received. Retry to check this submission.")}
+  catch(e){if(e.name==="AbortError"||!session)throw e;try{const rows=await api("/rest/v1/"+table+"?id=eq."+encodeURIComponent(payload.id)+"&select=*");if(rows?.[0])return rows[0]}catch{}throw e}
+}
+function loginPage(message=""){
+  app.innerHTML='<div class="login"><div class="loginWrap"><div class="eyebrow">STORE PORTAL</div><div class="brand">报告老板</div><div class="tag">Report issues. Track progress. Stay informed.</div><form class="loginCard" onsubmit="event.preventDefault();login()"><h2>Store sign in</h2><p>Select your store and enter the store password.</p><label class="field" for="storeSel">STORE / USERNAME</label><select id="storeSel" autocomplete="username">'+STORES.map(s=>'<option value="'+s.code+'">'+s.name+'</option>').join("")+'</select><label class="field" for="pwd">PASSWORD</label><input id="pwd" type="password" autocomplete="current-password" placeholder="Store password" required><div id="err" class="error" role="alert">'+h(message)+'</div><button class="primary" id="loginSubmit" type="submit">Sign in</button></form><div class="loginFoot">Hanok Group  -  Internal Operations</div></div></div>';
+}
+async function login(){
+  if(loginBusy)return;
+  const code=document.getElementById("storeSel").value,password=document.getElementById("pwd").value,out=document.getElementById("err");
+  out.textContent="";if(!password){out.textContent="Enter the store password.";return}
+  loginBusy=true;const epoch=authEpoch,done=loading();document.getElementById("loginSubmit").disabled=true;
+  try{
+    const r=await fetch(SB_URL+"/auth/v1/token?grant_type=password",{method:"POST",signal:AbortSignal.any([authController.signal,AbortSignal.timeout(30000)]),headers:{apikey:SB_KEY,"Content-Type":"application/json"},body:JSON.stringify({email:internalEmail(code),password})});
+    if(epoch!==authEpoch)throw cancelled();if(!r.ok)throw new Error(r.status===400||r.status===401?"Incorrect store or password.":"Sign in is unavailable. Please try again.");
+    const next=await r.json();if(epoch!==authEpoch)throw cancelled();if(!next?.access_token||!next?.user?.id)throw new Error("Invalid sign-in response.");
+    session=next;persistSession();document.getElementById("pwd").value="";await boot();
+  }catch(e){if(epoch===authEpoch&&e.name!=="AbortError")out.textContent=e.message}
+  finally{if(epoch===authEpoch){loginBusy=false;const button=document.getElementById("loginSubmit");if(button)button.disabled=false}done()}
+}
+function logout(revoke=true){
+  const token=session?.access_token;authEpoch++;authController.abort();authController=new AbortController();refreshPromise=null;
+  clearInterval(timer);timer=null;listSequence++;listBusy=false;loginBusy=false;loadingCount=0;document.getElementById("loading").classList.remove("show");
+  closeOverlay();session=null;profile=null;store=null;tickets=[];draft=null;filter="open";syncError=false;persistSession();clearTimeout(toastTimer);document.getElementById("toast").classList.remove("show");loginPage();
+  if(revoke&&token)fetch(SB_URL+"/auth/v1/logout?scope=local",{method:"POST",headers:{apikey:SB_KEY,Authorization:"Bearer "+token},signal:AbortSignal.timeout(10000)}).catch(()=>{});
+}
+async function boot(){
+  if(!session){loginPage();return}
+  const epoch=authEpoch,done=loading();
+  try{
+    const ps=await api("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(session.user.id)+"&select=user_id,display_name,role,store_id");if(!active(epoch))return;
+    profile=ps?.[0];if(!profile||profile.role!=="store"||!profile.store_id)throw Object.assign(new Error("This account is not assigned to a store."),{invalidAccount:true});
+    const ss=await api("/rest/v1/ops_stores?id=eq."+encodeURIComponent(profile.store_id)+"&select=id,code,name,active");if(!active(epoch))return;
+    store=ss?.[0];if(!store||store.active===false)throw Object.assign(new Error("This store is unavailable. Please contact HQ."),{invalidAccount:true});
+    render();await loadTickets();if(!active(epoch))return;
+    clearInterval(timer);timer=setInterval(()=>{if(document.visibilityState!=="hidden")loadTickets(true)},10000);
+  }catch(e){if(active(epoch)&&e.name!=="AbortError"){if(e.invalidAccount){logout(false);loginPage(e.message)}else{app.innerHTML='<div class="login"><div class="loginWrap"><div class="loginCard"><h2>Could not load your store</h2><p role="alert">'+h(e.message)+'</p><button class="primary" onclick="boot()">Retry connection</button><button class="secondary" onclick="logout()">Sign out</button></div></div></div>'}}}finally{done()}
+}
+async function loadTickets(silent=false){
+  if(!session||!store||(silent&&listBusy))return;
+  const epoch=authEpoch,sequence=++listSequence,storeId=store.id;listBusy=true;
+  try{
+    const rows=[];let page;
+    do{page=await api("/rest/v1/ops_tickets?store_id=eq."+encodeURIComponent(storeId)+"&select=id,ticket_no,title,description,reported_by,category,priority,status,due_at,follow_up_at,waiting_reason,resolution,created_at,updated_at&order=created_at.desc,id.desc&limit="+PAGE_SIZE+"&offset="+rows.length);if(!active(epoch)||sequence!==listSequence)return;rows.push(...(page||[]))}while(page?.length===PAGE_SIZE);
+    tickets=[...new Map(rows.map(t=>[t.id,t])).values()];syncError=false;render();
+    const v=view;if(v?.kind==="detail"&&isCurrent(v)){const t=tickets.find(t=>t.id===v.id);if(t)document.getElementById("ticketSummary").innerHTML=ticketSummary(t);refreshDetail(v)}
+  }catch(e){if(active(epoch)&&sequence===listSequence&&e.name!=="AbortError"){syncError=true;render();if(!silent)toast("Could not refresh tickets. "+e.message)}}finally{if(sequence===listSequence)listBusy=false}
+}
+function card(t){return '<button type="button" class="card ticket" data-ticket="'+h(t.id)+'"><span class="row between"><span class="row"><span class="pill '+cls(t)+'">'+h(t.priority==="urgent"&&t.status!=="completed"?"Urgent":statusLabel(t.status))+'</span><span class="ticketNo">'+h(store.code)+'-'+String(t.ticket_no||0).padStart(5,"0")+'</span></span><span class="age">'+age(t.created_at)+'</span></span><h3>'+h(t.title)+'</h3><p>'+h(t.description||t.category)+'</p><span class="chev" aria-hidden="true">&gt;</span></button>'}
+function render(){
+  if(!session||!store)return;
+  let arr=tickets.filter(t=>filter==="open"?t.status!=="completed":t.status===filter);
+  const focused=document.activeElement?.dataset.ticket||null;
+  app.innerHTML='<div class="shell"><div class="top"><div class="topInner"><div class="topRow"><div><div class="storeName">'+h(store.name)+'</div><div class="portalTag">报告老板  -  STORE PORTAL</div></div><button class="logout" onclick="logout()">Sign out</button></div><div class="hello">Store operations</div><div class="sub">Report an issue and track HQ progress here.</div><div class="sync" role="status"><i'+(syncError?' style="background:#c78c38"':'')+'></i> '+(syncError?'Refresh failed. Retrying every 10s.':'Connected  -  auto-sync every 10s')+'</div></div></div><main class="main"><div class="report"><div><h2>Report an issue</h2><p>Maintenance, stock, IT, staff, landlord and more.</p></div><button class="plus" aria-label="Report an issue" onclick="newTicket()">+</button></div><div class="tabs" aria-label="Ticket filters">'+["open","waiting","completed"].map(x=>'<button aria-pressed="'+(filter===x)+'" class="'+(filter===x?"active":"")+'" onclick="filter=\''+x+'\';render()">'+x[0].toUpperCase()+x.slice(1)+'</button>').join("")+'</div><div class="sectionTitle">My Tickets</div>'+(arr.length?arr.map(card).join(""):'<div class="empty">'+(syncError?'Tickets could not be loaded.':'No tickets in this section.')+'</div>')+'</main></div>';
+  app.querySelectorAll("[data-ticket]").forEach(b=>b.onclick=()=>detail(b.dataset.ticket));
+  if(focused&&!view)app.querySelector('[data-ticket="'+CSS.escape(focused)+'"]')?.focus();
+}
+function releaseView(){if(view){view.controller.abort();view.urls.forEach(u=>URL.revokeObjectURL(u))}view=null}
+function openView(kind,id,title,html){
+  if(!view)returnFocus=document.activeElement;
+  releaseView();const v={kind,id,key:++viewSequence,epoch:authEpoch,controller:new AbortController(),urls:new Set(),partsBusy:false,busy:false};view=v;
+  app.inert=true;overlay.className="overlay show";overlay.setAttribute("role","dialog");overlay.setAttribute("aria-modal","true");overlay.setAttribute("aria-labelledby","overlayTitle");
+  overlay.innerHTML='<div class="overlayTop"><button type="button" aria-label="Close" onclick="closeOverlay()">&lt;</button><b id="overlayTitle">'+h(title)+'</b><span aria-hidden="true"></span></div><div class="sheet"><div class="sheetInner">'+html+'</div></div>';
+  overlay.querySelector("button")?.focus();return v;
+}
+function closeOverlay(){releaseView();overlay.className="overlay";overlay.innerHTML="";overlay.removeAttribute("role");overlay.removeAttribute("aria-modal");app.inert=false;if(returnFocus?.isConnected)returnFocus.focus();else app.querySelector(".plus")?.focus();returnFocus=null}
+window.addEventListener("keydown",e=>{if(!view)return;if(e.key==="Escape"){e.preventDefault();closeOverlay()}else if(e.key==="Tab"){const els=[...overlay.querySelectorAll('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),video[controls]')].filter(el=>el.getClientRects().length);const first=els[0],last=els.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus()}}});
+window.addEventListener("storage",e=>{if(e.key===SESSION_KEY&&e.newValue===null&&session)logout(false)});
+function newTicket(){
+  if(!session||!store)return;
+  if(!draft)draft={id:crypto.randomUUID(),title:"",description:"",reported_by:"",category:CATEGORIES[0],priority:"normal",file:null,created:null,busy:false,payload:null,attachmentId:crypto.randomUUID(),uploaded:false,error:""};
+  const d=draft;
+  openView("new",d.id,"Report Issue",'<form class="form detailCard" onsubmit="event.preventDefault();createTicket()"><fieldset id="ticketFields"><label for="reportedBy">Reported by</label><input id="reportedBy" maxlength="100" placeholder="Your name, e.g. Jack" value="'+h(d.reported_by)+'"><label for="cat">Category</label><select id="cat">'+CATEGORIES.map(x=>'<option'+(x===d.category?' selected':'')+'>'+x+'</option>').join("")+'</select><label for="title">Title</label><input id="title" required placeholder="What needs attention?" value="'+h(d.title)+'"><label for="desc">Description</label><textarea id="desc" placeholder="Tell HQ what happened and what you need.">'+h(d.description)+'</textarea><label for="pri">Priority</label><select id="pri"><option value="normal">Normal</option><option value="urgent"'+(d.priority==="urgent"?' selected':'')+'>Urgent</option></select><label for="file">Photo / Video (up to 50 MB)</label><input id="file" type="file" accept="image/*,video/*"><p id="fileName" class="formNote">'+h(d.file?.name||"")+'</p></fieldset><div id="submitStatus" role="status" class="formNote"></div><button id="submitTicket" class="primary" type="submit">Submit to HQ</button></form>');
+  for(const [id,key] of Object.entries({title:"title",desc:"description",reportedBy:"reported_by",cat:"category",pri:"priority"})){document.getElementById(id).addEventListener("input",e=>{if(!d.payload)d[key]=e.target.value})}
+  document.getElementById("file").onchange=e=>{if(d.payload)return;d.file=e.target.files[0]||null;document.getElementById("fileName").textContent=d.file?.name||""};
+  updateDraftView(d);
+}
+function updateDraftView(d){if(view?.kind!=="new"||view.id!==d.id)return;document.getElementById("ticketFields").disabled=d.busy||!!d.payload;const button=document.getElementById("submitTicket");button.disabled=d.busy;button.textContent=d.busy?(d.created?"Uploading attachment...":"Submitting..."):d.created?"Retry attachment":d.payload?"Retry submission":"Submit to HQ";document.getElementById("submitStatus").textContent=d.error||(d.created?"Your ticket is already sent to HQ. Only the attachment remains.":d.busy?"Sending your issue to HQ...":"")}
+async function upload(d){
+  const file=d.file;if(!file)return;
+  const path=d.id+"/"+d.attachmentId+"_"+file.name.replace(/[^a-zA-Z0-9._-]/g,"_");
+  if(!d.uploaded){await request("/storage/v1/object/ops-ticket-attachments/"+path,{method:"POST",headers:{"Content-Type":file.type||"application/octet-stream","x-upsert":"true"},body:file});d.uploaded=true}
+  await insertOnce("ops_ticket_attachments",{id:d.attachmentId,ticket_id:d.id,uploaded_by:d.payload.created_by,storage_path:path,file_name:file.name,mime_type:file.type,size_bytes:file.size});
+}
+async function createTicket(){
+  const d=draft;if(!d||d.busy||!session||!store)return;
+  if(!d.title.trim()){toast("Add a title.");document.getElementById("title")?.focus();return}
+  if(d.file&&(d.file.size>MAX_FILE_SIZE||!(/^(image|video)\//).test(d.file.type)||d.file.type.toLowerCase()==="image/svg+xml"||/\.svgz?$/i.test(d.file.name))){toast("Choose a photo or video up to 50 MB. SVG files are not supported.");return}
+  const epoch=authEpoch;d.busy=true;d.error="";
+  if(!d.payload)d.payload={id:d.id,store_id:store.id,created_by:session.user.id,title:d.title.trim(),description:d.description.trim(),reported_by:d.reported_by.trim()||null,category:d.category,priority:d.priority};
+  updateDraftView(d);
+  try{
+    if(!d.created)d.created=await insertOnce("ops_tickets",d.payload);
+    if(!active(epoch))return;updateDraftView(d);await upload(d);if(!active(epoch))return;
+    if(draft===d)draft=null;if(view?.kind==="new"&&view.id===d.id)closeOverlay();await loadTickets();if(active(epoch))toast("Issue sent to HQ.");
+  }catch(e){if(active(epoch)&&e.name!=="AbortError"){d.error=d.created?"Ticket sent to HQ, but the attachment is not complete. Retry attachment; no new ticket will be created. "+e.message:"Submission could not be confirmed. Retry safely to check or finish the same ticket. "+e.message;updateDraftView(d);toast(d.created?"Ticket sent. Attachment needs a retry.":"Could not confirm submission. Your draft is kept.");if(d.created)loadTickets(true)}}
+  finally{d.busy=false;if(active(epoch))updateDraftView(d)}
+}
+function ticketSummary(t){return '<div class="row between"><span class="pill '+cls(t)+'">'+h(t.priority==="urgent"&&t.status!=="completed"?"Urgent":statusLabel(t.status))+'</span><span class="ticketNo">'+h(store.code)+'-'+String(t.ticket_no||0).padStart(5,"0")+'</span></div><h1>'+h(t.title)+'</h1><p class="desc">'+h(t.description||"No description.")+'</p><div class="meta"><div><b>CATEGORY</b>'+h(t.category)+'</div><div><b>REPORTED BY</b>'+h(t.reported_by||"-")+'</div><div><b>STATUS</b>'+h(statusLabel(t.status))+'</div><div><b>CREATED</b>'+fmt(t.created_at)+'</div><div><b>DUE</b>'+fmt(t.due_at)+'</div></div>'+(t.status==="waiting"?'<div class="card" style="background:#fbf0df"><b>Waiting</b><p>'+h(t.waiting_reason||"HQ follow-up pending")+(t.follow_up_at?"  -  "+fmt(t.follow_up_at):"")+'</p></div>':"")+(t.status==="completed"&&t.resolution?'<div class="card" style="background:#eaf6ee"><b>Resolution</b><p>'+h(t.resolution)+'</p></div>':"")}
+function detail(id){
+  const t=tickets.find(x=>x.id===id);if(!t||!session)return;
+  const v=openView("detail",id,"Ticket Detail",'<div class="detailCard"><div id="ticketSummary">'+ticketSummary(t)+'</div><div><b>Attachments</b><div id="attachments" class="attachments">Loading...</div></div><div id="reopenWrap"></div><div id="events" class="timeline">Loading timeline...</div><div id="comments">Loading comments...</div><form class="form" onsubmit="event.preventDefault();comment()"><label for="comment">Add comment</label><textarea id="comment" required placeholder="Add an update for HQ..."></textarea><button id="postComment" class="secondary" type="submit">Post comment</button><div id="commentStatus" role="status" class="formNote"></div></form></div>');
+  refreshDetail(v);
+}
+async function refreshDetail(v){
+  if(!isCurrent(v)||v.partsBusy)return;v.partsBusy=true;
+  const specs=[['events','ops_ticket_events','id,event_type,message,created_at','asc'],['comments','ops_ticket_comments','id,body,created_at','asc'],['attachments','ops_ticket_attachments','id,storage_path,file_name,mime_type,created_at','asc'],['reopenWrap','ops_reopen_requests','id,reason,status,created_at,reviewed_at','desc']];
+  try{await Promise.all(specs.map(async([boxId,table,select,order])=>{
+    try{
+      const rows=await api('/rest/v1/'+table+'?ticket_id=eq.'+encodeURIComponent(v.id)+'&select='+select+'&order=created_at.'+order,{signal:v.controller.signal});if(!isCurrent(v))return;
+      const box=document.getElementById(boxId),list=rows||[];
+      if(boxId==='events')box.innerHTML='<b>Timeline</b>'+(list.length?list.map(e=>'<div class="tl"><i></i><div><strong>'+h(e.message||e.event_type)+'</strong><span>'+h((e.event_type||"").replaceAll("_"," "))+'</span></div><span>'+fmt(e.created_at)+'</span></div>').join(""):'<div class="empty" style="padding:18px">No events yet.</div>');
+      else if(boxId==='comments')box.innerHTML='<b>Comments</b>'+(list.length?list.map(c=>'<div class="comment"><b>'+fmt(c.created_at)+'</b><p>'+h(c.body)+'</p></div>').join(""):'<div class="empty" style="padding:18px">No comments yet.</div>');
+      else if(boxId==='attachments'){const key=JSON.stringify(list);if(key!==v.attachmentsKey){v.attachmentsKey=key;await renderAttachments(list,v)}}
+      else renderReopen(v,list);
+    }catch(e){if(isCurrent(v)&&e.name!=="AbortError"){const box=document.getElementById(boxId);box.replaceChildren();const msg=document.createElement("p");msg.className="formNote";msg.textContent="Could not load "+({events:"timeline",comments:"comments",attachments:"attachments",reopenWrap:"reopen requests"}[boxId])+".";const retry=document.createElement("button");retry.className="secondary";retry.textContent="Retry";retry.onclick=()=>refreshDetail(v);box.append(msg,retry)}}
+  }))}finally{v.partsBusy=false;if(v.refreshAgain&&isCurrent(v)){v.refreshAgain=false;refreshDetail(v)}}
+}
+async function renderAttachments(list,v){
+  const box=document.getElementById("attachments");v.urls.forEach(u=>URL.revokeObjectURL(u));v.urls.clear();box.innerHTML=list.length?"":'<div class="formNote">No attachments.</div>';
+  await Promise.all(list.map(async a=>{
+    const el=document.createElement("div");el.className="attachment";box.appendChild(el);
+    const load=async()=>{el.textContent="Loading "+a.file_name+"...";try{
+      const response=await request("/storage/v1/object/authenticated/ops-ticket-attachments/"+a.storage_path.split("/").map(encodeURIComponent).join("/"),{signal:v.controller.signal});const blob=await response.blob();if(!isCurrent(v))return;
+      const url=URL.createObjectURL(blob);v.urls.add(url);el.replaceChildren();
+      if((a.mime_type||"").startsWith("image/")){const button=document.createElement("button");button.type="button";button.setAttribute("aria-label","Expand photo: "+a.file_name);button.setAttribute("aria-expanded","false");const img=document.createElement("img");img.alt=a.file_name;img.src=url;button.appendChild(img);button.onclick=()=>{const expanded=el.classList.toggle("expanded");button.setAttribute("aria-expanded",String(expanded));button.setAttribute("aria-label",(expanded?"Collapse photo: ":"Expand photo: ")+a.file_name)};el.appendChild(button)}
+      else if((a.mime_type||"").startsWith("video/")){const video=document.createElement("video");video.controls=true;video.preload="metadata";video.src=url;video.setAttribute("aria-label",a.file_name);el.appendChild(video)}
+      else{const link=document.createElement("a");link.href=url;link.download=a.file_name;link.textContent="Download "+a.file_name;el.appendChild(link)}
+    }catch(e){if(isCurrent(v)&&e.name!=="AbortError"){el.replaceChildren();const button=document.createElement("button");button.textContent="Retry "+a.file_name;button.onclick=load;el.appendChild(button)}}};await load();
+  }));
+}
+function renderReopen(v,list){
+  if(!isCurrent(v))return;const box=document.getElementById("reopenWrap"),t=tickets.find(t=>t.id===v.id),pending=list.find(x=>x.status==="pending"),latest=list[0];
+  if(pending){box.innerHTML='<div class="reopenBox"><b>Reopen requested</b><p>'+h(pending.reason)+'  -  Waiting for HQ review.</p></div>';return}
+  const reviewed=latest?'<div class="reopenBox"><b>Reopen '+h(latest.status)+'</b><p>'+h(latest.reason)+(latest.reviewed_at?'  -  '+fmt(latest.reviewed_at):'')+'</p></div>':'';
+  box.innerHTML=reviewed+(t?.status==="completed"?'<div class="reopenBox"><b>Still not resolved?</b><p>If the issue remains after completion, ask HQ to reopen this ticket.</p><button id="reopenButton" class="secondary">Issue not resolved</button></div>':'');
+  document.getElementById("reopenButton")?.addEventListener("click",()=>reopenForm(v.id));
+}
+function reopenForm(id){
+  const v=openView("reopen",id,"Request Reopen",'<form class="form detailCard" onsubmit="event.preventDefault();requestReopen()"><label for="reopenReason">What is still wrong?</label><textarea id="reopenReason" required minlength="3" maxlength="1000" placeholder="Explain why this issue is not resolved."></textarea><button id="sendReopen" class="primary" type="submit">Send to HQ</button><button id="backToTicket" class="secondary" type="button">Back to ticket</button><div id="reopenStatus" role="status" class="formNote"></div></form>');
+  document.getElementById("backToTicket").onclick=()=>detail(id);v.operation=null;
+}
+async function requestReopen(){
+  const v=view;if(!v||v.kind!=="reopen"||v.busy||!isCurrent(v))return;
+  const input=document.getElementById("reopenReason"),reason=input.value.trim();if(reason.length<3||reason.length>1000){toast("Please add a reason between 3 and 1,000 characters.");return}
+  v.busy=true;input.disabled=true;document.getElementById("sendReopen").disabled=true;document.getElementById("reopenStatus").textContent="Sending...";
+  if(!v.operation)v.operation={id:crypto.randomUUID(),ticket_id:v.id,store_id:store.id,requested_by:session.user.id,reason};
+  try{await insertOnce("ops_reopen_requests",v.operation);if(isCurrent(v)){detail(v.id);toast("Reopen request sent to HQ.")}}
+  catch(e){if(isCurrent(v)&&e.name!=="AbortError"){if(e.status===409){detail(v.id);toast("A reopen request is already pending for this ticket.")}else document.getElementById("reopenStatus").textContent="Could not confirm the request. Retry to check or finish the same request. "+e.message}}
+  finally{v.busy=false;if(isCurrent(v)){document.getElementById("sendReopen").disabled=false;/* Preserve the payload on uncertain retries. */}}
+}
+async function comment(){
+  const v=view;if(!v||v.kind!=="detail"||v.busy||!isCurrent(v))return;
+  const input=document.getElementById("comment"),body=input.value.trim();if(!body)return;
+  v.busy=true;input.disabled=true;document.getElementById("postComment").disabled=true;document.getElementById("commentStatus").textContent="Sending...";
+  if(!v.operation)v.operation={id:crypto.randomUUID(),ticket_id:v.id,author_id:session.user.id,body};
+  try{await insertOnce("ops_ticket_comments",v.operation);if(isCurrent(v)){input.value="";v.operation=null;document.getElementById("commentStatus").textContent="Comment added.";if(v.partsBusy)v.refreshAgain=true;else refreshDetail(v)}}
+  catch(e){if(isCurrent(v)&&e.name!=="AbortError")document.getElementById("commentStatus").textContent="Could not confirm the comment. Retry to check or finish the same comment. "+e.message}
+  finally{v.busy=false;if(isCurrent(v)){input.disabled=!!v.operation;document.getElementById("postComment").disabled=false}}
+}
 if(session)boot();else loginPage();
 </script></body></html>

@@ -28,6 +28,7 @@ import java.util.Set;
 
 public class NotificationPollJob extends JobService {
     public static final int JOB_ID = 42001;
+    public static volatile boolean foreground = false;
     public static final String PREFS = "hanok_ops_native";
 
     private static final String SB_URL = "https://tqfwbsjchespjkxliodo.supabase.co";
@@ -54,6 +55,7 @@ public class NotificationPollJob extends JobService {
 
     private void pollNotifications() throws Exception {
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        if (foreground) return;
         String refreshToken = prefs.getString("refresh_token", null);
         if (refreshToken == null || refreshToken.isEmpty()) return;
 
@@ -64,13 +66,15 @@ public class NotificationPollJob extends JobService {
         String newRefreshToken = refreshed.optString("refresh_token", refreshToken);
         if (accessToken.isEmpty()) return;
 
+        // Logout, foreground refresh, or another account may have changed the session.
+        if (!refreshToken.equals(prefs.getString("refresh_token", null))) return;
         prefs.edit()
                 .putString("access_token", accessToken)
                 .putString("refresh_token", newRefreshToken)
                 .apply();
 
         JSONArray notifications = getUnreadNotifications(accessToken);
-        if (notifications == null) return;
+        if (notifications == null || !newRefreshToken.equals(prefs.getString("refresh_token", null))) return;
 
         Set<String> seen = new HashSet<>(prefs.getStringSet("notified_ids", Collections.emptySet()));
         boolean changed = false;
