@@ -32,5 +32,5 @@ test('Android upgrade identity, displayed version and signed-workflow guard stay
   assert.ok(code > 11, 'Hotfix must update the delivered code 11 APK');
   assert.ok(workflow.includes("versionCode='" + code + "' versionName='" + version + "'"));
   assert.ok(html.includes('· v' + version));
-  assert.ok(workflow.includes('cc4e046b6cec589ac00310ee4ea8f62506cfd45a44114e15c23875f4fdd9f92f'));
+  assert.ok(workflow.includes('fd9dcc1f8ddcc0a600e93cc0ebfb17ad53b98eac23df06a8f0b828b3bf5e6a4f'));
 });
