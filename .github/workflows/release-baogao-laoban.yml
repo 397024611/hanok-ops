@@ -74,7 +74,7 @@ jobs:
           test -x "$ZIPALIGN"
           test -x "$AAPT"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee signature.txt
-          grep -q "Signer #1 certificate SHA-256 digest: fd9dcc1f8ddcc0a600e93cc0ebfb17ad53b98eac23df06a8f0b828b3bf5e6a4f" signature.txt
+          node scripts/verify-apk-certificate.cjs signature.txt fd9dcc1f8ddcc0a600e93cc0ebfb17ad53b98eac23df06a8f0b828b3bf5e6a4f
           "$ZIPALIGN" -c 4 "$APK"
           "$AAPT" dump badging "$APK" | tee apk-badging.txt
           grep -Fq "package: name='com.hanokgroup.ops' versionCode='12' versionName='0.8.4'" apk-badging.txt
