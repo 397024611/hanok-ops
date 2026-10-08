@@ -55,9 +55,14 @@ minimum_password_length = 8
 sign_in_sign_ups = 1000
 token_refresh = 1000
 
+# This provider toggle must stay true for admin-created email/password logins.
+# Global [auth].enable_signup remains false; public registration stays disabled.
 [auth.email]
-enable_signup = false
+enable_signup = true
 enable_confirmations = false
+
+[auth.email.notification.password_changed]
+enabled = false
 
 [auth.sms]
 enable_signup = false

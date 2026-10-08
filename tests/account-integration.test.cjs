@@ -31,3 +31,19 @@ test('integration workflow is read-only, pinned, isolated, and does not export p
   assert.match(config, /\[functions.ops-admin-store-user\]\nverify_jwt = true/);
   assert.match(config, /\[local_smtp\]\nenabled = false/);
 });
+
+
+test('fixture emails are valid reserved addresses and diagnostics expose only fixed codes', async () => {
+  const { fixtureEmail, safeProviderCode } = await import('./account-integration.mjs');
+  for (const label of ['Administrator', 'Head office', 'Untrusted metadata']) {
+    assert.match(fixtureEmail(label), /^[a-z0-9-]+@example\.invalid$/);
+  }
+  assert.equal(safeProviderCode({ error_code: 'email_provider_disabled', msg: 'sensitive value' }), 'email_provider_disabled');
+  assert.equal(safeProviderCode({ code: '42501', details: 'private content' }), '42501');
+  assert.equal(safeProviderCode({ error_code: 'unknown-secret-value', message: 'private content', access_token: 'private' }), 'unclassified');
+  assert.equal(safeProviderCode({ msg: 'email_provider_disabled' }), 'unclassified');
+  const config = fs.readFileSync(path.join(__dirname, '../supabase/config.toml'), 'utf8');
+  assert.match(config, /\[auth\][\s\S]*?enable_signup = false/);
+  assert.match(config, /\[auth.email\]\nenable_signup = true/);
+  assert.match(config, /\[auth.email.notification.password_changed\]\nenabled = false/);
+});

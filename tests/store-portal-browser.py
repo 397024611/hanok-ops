@@ -8,7 +8,6 @@ import copy
 import json
 import os
 from pathlib import Path
-import shutil
 import unittest
 from urllib.parse import parse_qs, urlsplit
 from playwright.async_api import async_playwright, expect
@@ -113,7 +112,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         ARTIFACTS.mkdir(exist_ok=True)
         self.pw = await async_playwright().start()
-        executable = os.environ.get("CHROMIUM_PATH") or shutil.which("chromium") or shutil.which("chromium-browser")
+        executable = os.environ.get("CHROMIUM_PATH") or None
         try:
             self.browser = await self.pw.chromium.launch(executable_path=executable, headless=True, args=["--no-sandbox"])
         except Exception:
@@ -339,7 +338,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
         await self.page.get_by_label("Email", exact=True).fill("admin@example.test")
         await self.page.get_by_label("Password", exact=True).fill("fake-admin-password")
         await self.page.get_by_label("Password", exact=True).press("Enter")
-        await expect(self.page.get_by_role("button", name="Create / Reset Store Account")).to_be_visible()
+        await expect(self.page.get_by_role("button", name="Reset Shared Store Password", exact=True)).to_be_visible()
 
     async def test_admin_no_shared_password_duplicate_save_and_cleanup(self):
         await self.admin_login()
@@ -362,7 +361,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
             return False
         self.backend.hooks.append(hook)
         await self.page.get_by_label("Temporary password").fill("unique-test-password")
-        await self.page.get_by_role("button", name="Create / Reset Store Account").click(); await started.wait()
+        await self.page.get_by_role("button", name="Reset Shared Store Password", exact=True).click(); await started.wait()
         await self.page.get_by_role("button", name="Sign out", exact=True).click(); release.set()
         await self.page.wait_for_timeout(100)
         await expect(self.page.locator("#out")).to_have_text("")

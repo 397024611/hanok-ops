@@ -47,9 +47,22 @@ export function rejectRemoteEnvironment(env) {
   }
 }
 
+// Only fixed, documented codes can appear in CI. Never emit provider messages,
+// unknown fields, arbitrary code strings, response bodies, or credential values.
+export function safeProviderCode(data) {
+  const allowed = new Set(['email_provider_disabled', 'email_address_invalid', 'signup_disabled',
+    'validation_failed', 'unexpected_failure', 'weak_password', 'user_already_exists',
+    'email_exists', 'bad_json', 'invalid_credentials', 'not_admin', 'bad_jwt',
+    'over_request_rate_limit', 'over_email_send_rate_limit', 'email_not_confirmed',
+    '42501', '23505', '23503', 'P0001', 'PGRST202', 'PGRST204']);
+  for (const value of [data?.error_code, data?.code]) if (allowed.has(value)) return value;
+  return 'unclassified';
+}
+
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 const password = () => `Local-${randomBytes(24).toString('base64url')}!9`;
-const email = label => `${label}-${randomUUID()}@example.invalid`;
+export const fixtureEmail = label => `${String(label).toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 20)}-${randomUUID()}@example.invalid`;
+const email = fixtureEmail;
 function sqlString(value) { return `'${String(value).replaceAll("'", "''")}'`; }
 
 async function run() {
@@ -117,7 +130,7 @@ async function run() {
     return { status: response.status, ok: response.ok, data, bytes, headers: response.headers };
   }
   const expect = (result, code, label) => {
-    check(result.status === code, `${label}: expected HTTP ${code}, received ${result.status}`);
+    check(result.status === code, `${label}: expected HTTP ${code}, received ${result.status} (${safeProviderCode(result.data)})`);
     return result.data;
   };
   const rows = (result, label) => {
