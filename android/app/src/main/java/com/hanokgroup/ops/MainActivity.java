@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.MimeTypeMap;
 import android.webkit.ValueCallback;
@@ -227,17 +228,24 @@ public class MainActivity extends Activity {
     }
 
     private void scheduleNotificationJob() {
-        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
-        if (scheduler == null) return;
-        JobInfo info = new JobInfo.Builder(
-                NotificationPollJob.JOB_ID,
-                new ComponentName(this, NotificationPollJob.class)
-        )
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setPeriodic(15 * 60 * 1000L)
-                .setPersisted(true)
-                .build();
-        scheduler.schedule(info);
+        // Background reminders must never make a successful login crash.
+        try {
+            JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+            if (scheduler == null) return;
+            JobInfo info = new JobInfo.Builder(
+                    NotificationPollJob.JOB_ID,
+                    new ComponentName(this, NotificationPollJob.class)
+            )
+                    .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                    .setPeriodic(15 * 60 * 1000L)
+                    .setPersisted(true)
+                    .build();
+            if (scheduler.schedule(info) != JobScheduler.RESULT_SUCCESS) {
+                Log.w("ReportBoss", "Background notification scheduling was rejected");
+            }
+        } catch (RuntimeException e) {
+            Log.w("ReportBoss", "Background notification scheduling is unavailable", e);
+        }
     }
 
     private String storedNativeSession() {
