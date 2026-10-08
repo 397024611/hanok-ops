@@ -5,7 +5,12 @@
     "test": "node --test tests/*.test.cjs",
     "test:browser:hq": "python tests/hq-browser.py",
     "test:browser:store": "python tests/store-portal-browser.py",
-    "check": "node scripts/check-syntax.cjs"
+    "check": "node scripts/check-syntax.cjs",
+    "test:browser:accounts": "python tests/account-management-browser.py",
+    "test:browser:partners": "python tests/store-accounts-browser.py"
   },
-  "devDependencies": { "jsdom": "26.1.0" }
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
+    "jsdom": "26.1.0"
+  }
 }

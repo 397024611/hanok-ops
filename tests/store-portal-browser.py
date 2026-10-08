@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, urlsplit
 from playwright.async_api import async_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
+ARTIFACTS = ROOT / "tests" / "artifacts"
 USER = "11111111-1111-4111-8111-111111111111"
 STORE = "22222222-2222-4222-8222-222222222222"
 SESSION = {"access_token": "test-access", "refresh_token": "test-refresh", "user": {"id": USER}}
@@ -110,6 +111,7 @@ class Backend:
 
 class PortalTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        ARTIFACTS.mkdir(exist_ok=True)
         self.pw = await async_playwright().start()
         executable = os.environ.get("CHROMIUM_PATH") or shutil.which("chromium") or shutil.which("chromium-browser")
         try:
@@ -117,7 +119,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
         except Exception:
             await self.pw.stop()
             raise
-        self.context = await self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.context = await self.browser.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         self.backend = Backend()
         await self.context.route("**/*", self.backend.handle)
         self.page = await self.context.new_page()
@@ -148,8 +150,10 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
         await self.page.get_by_label("PASSWORD", exact=True).fill("fake-password")
         await self.page.get_by_label("PASSWORD", exact=True).press("Enter")
         await expect(self.page.locator(".ticket")).to_have_count(1)
+        await self.page.screenshot(path=str(ARTIFACTS / "store-portal-tickets.png"), full_page=True)
         await self.new_issue()
         await expect(self.page.get_by_role("dialog", name="Report Issue")).to_be_visible()
+        await self.page.screenshot(path=str(ARTIFACTS / "store-portal-report.png"), full_page=True)
         await self.page.keyboard.press("Escape")
         await expect(self.page.get_by_role("dialog")).to_have_count(0)
         await expect(self.page.get_by_role("button", name="Report an issue", exact=True)).to_be_focused()

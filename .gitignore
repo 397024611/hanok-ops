@@ -13,3 +13,7 @@ local.properties
 node_modules/
 tests/*.png
 __pycache__/
+
+# Isolated validation output and local Supabase CLI state
+tests/artifacts/
+supabase/.temp/
