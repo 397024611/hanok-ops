@@ -21,9 +21,9 @@ The workflow decodes the keystore only inside the temporary GitHub Actions runne
 
 Public SHA-256 certificate fingerprint:
 
-`CC:4E:04:6B:6C:EC:58:9A:C0:03:10:EE:4E:A8:F6:25:06:CF:D4:5A:44:11:4E:15:C2:38:75:F4:FD:D9:F9:2F`
+`FD:9D:CC:1F:8D:DC:C0:A6:00:E9:3C:C0:EB:FB:17:AD:53:B9:8E:AC:23:DF:06:A8:F0:B8:28:B3:BF:5E:6A:4F`
 
-Use this fingerprint to verify that future production APKs are signed by the new 报告老板 release key created on 2026-10-06.
+Use this fingerprint to verify that future production APKs are signed by the new 报告老板 release key created on 2026-10-08.
 
 ## Local custody
 

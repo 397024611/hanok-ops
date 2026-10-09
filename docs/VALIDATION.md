@@ -1,6 +1,6 @@
 # Public validation guide
 
-The 0.8.3 source tree is an unreleased candidate. Do not distribute debug-signed APKs.
+The 0.9.0 source tree is an unreleased account-management candidate. Read `ACCOUNT-MANAGEMENT.md` and `ACCOUNT-BACKEND.md` before any publication or deployment. Do not distribute debug-signed APKs.
 
 ## Offline automated checks
 

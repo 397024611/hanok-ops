@@ -1,0 +1,83 @@
+# Ephemeral integration-test stack only. Never link this configuration to a hosted project.
+# Generated from Supabase CLI 2.120.0's local config and reduced to required services.
+project_id = "reportboss-accounts-integration"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+health_timeout = "2m"
+
+[db.migrations]
+enabled = true
+schema_paths = []
+
+[db.seed]
+enabled = false
+sql_paths = []
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+
+[local_smtp]
+enabled = false
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[storage.s3_protocol]
+enabled = false
+
+[storage.vector]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = []
+jwt_expiry = 3600
+enable_signup = false
+enable_anonymous_sign_ins = false
+minimum_password_length = 8
+
+[auth.rate_limit]
+sign_in_sign_ups = 1000
+token_refresh = 1000
+
+# This provider toggle must stay true for admin-created email/password logins.
+# Global [auth].enable_signup remains false; public registration stays disabled.
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+[auth.email.notification.password_changed]
+enabled = false
+
+[auth.sms]
+enable_signup = false
+enable_confirmations = false
+
+[edge_runtime]
+enabled = true
+policy = "per_worker"
+deno_version = 2
+
+[functions.ops-admin-accounts]
+verify_jwt = true
+
+[functions.ops-admin-store-user]
+verify_jwt = true
+
+[analytics]
+enabled = false

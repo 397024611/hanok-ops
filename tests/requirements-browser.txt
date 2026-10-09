@@ -1,0 +1,2 @@
+# Browser version is installed by: python -m playwright install --with-deps chromium
+playwright==1.62.0

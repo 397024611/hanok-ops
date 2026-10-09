@@ -8,12 +8,12 @@ import copy
 import json
 import os
 from pathlib import Path
-import shutil
 import unittest
 from urllib.parse import parse_qs, urlsplit
 from playwright.async_api import async_playwright, expect
 
 ROOT = Path(__file__).resolve().parents[1]
+ARTIFACTS = ROOT / "tests" / "artifacts"
 USER = "11111111-1111-4111-8111-111111111111"
 STORE = "22222222-2222-4222-8222-222222222222"
 SESSION = {"access_token": "test-access", "refresh_token": "test-refresh", "user": {"id": USER}}
@@ -110,14 +110,15 @@ class Backend:
 
 class PortalTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
+        ARTIFACTS.mkdir(exist_ok=True)
         self.pw = await async_playwright().start()
-        executable = os.environ.get("CHROMIUM_PATH") or shutil.which("chromium") or shutil.which("chromium-browser")
+        executable = os.environ.get("CHROMIUM_PATH") or None
         try:
             self.browser = await self.pw.chromium.launch(executable_path=executable, headless=True, args=["--no-sandbox"])
         except Exception:
             await self.pw.stop()
             raise
-        self.context = await self.browser.new_context(viewport={"width": 390, "height": 844})
+        self.context = await self.browser.new_context(viewport={"width": 390, "height": 844}, service_workers="block")
         self.backend = Backend()
         await self.context.route("**/*", self.backend.handle)
         self.page = await self.context.new_page()
@@ -148,8 +149,10 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
         await self.page.get_by_label("PASSWORD", exact=True).fill("fake-password")
         await self.page.get_by_label("PASSWORD", exact=True).press("Enter")
         await expect(self.page.locator(".ticket")).to_have_count(1)
+        await self.page.screenshot(path=str(ARTIFACTS / "store-portal-tickets.png"), full_page=True)
         await self.new_issue()
         await expect(self.page.get_by_role("dialog", name="Report Issue")).to_be_visible()
+        await self.page.screenshot(path=str(ARTIFACTS / "store-portal-report.png"), full_page=True)
         await self.page.keyboard.press("Escape")
         await expect(self.page.get_by_role("dialog")).to_have_count(0)
         await expect(self.page.get_by_role("button", name="Report an issue", exact=True)).to_be_focused()
@@ -335,7 +338,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
         await self.page.get_by_label("Email", exact=True).fill("admin@example.test")
         await self.page.get_by_label("Password", exact=True).fill("fake-admin-password")
         await self.page.get_by_label("Password", exact=True).press("Enter")
-        await expect(self.page.get_by_role("button", name="Create / Reset Store Account")).to_be_visible()
+        await expect(self.page.get_by_role("button", name="Reset Shared Store Password", exact=True)).to_be_visible()
 
     async def test_admin_no_shared_password_duplicate_save_and_cleanup(self):
         await self.admin_login()
@@ -358,7 +361,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
             return False
         self.backend.hooks.append(hook)
         await self.page.get_by_label("Temporary password").fill("unique-test-password")
-        await self.page.get_by_role("button", name="Create / Reset Store Account").click(); await started.wait()
+        await self.page.get_by_role("button", name="Reset Shared Store Password", exact=True).click(); await started.wait()
         await self.page.get_by_role("button", name="Sign out", exact=True).click(); release.set()
         await self.page.wait_for_timeout(100)
         await expect(self.page.locator("#out")).to_have_text("")

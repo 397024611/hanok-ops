@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Mock-only Chromium regression tests. No real Supabase/AI calls are made."""
-import asyncio,json,threading,http.server,functools,pathlib
+import asyncio,json,threading,http.server,functools,os,pathlib
 from playwright.async_api import async_playwright
 ROOT=pathlib.Path(__file__).resolve().parents[1]
+ARTIFACTS=ROOT/'tests'/'artifacts'
 USER='11111111-1111-4111-8111-111111111111'; STORE='22222222-2222-4222-8222-222222222222'; TICKET='33333333-3333-4333-8333-333333333333'
 SESSION={'user':{'id':USER},'access_token':'test-access','refresh_token':'test-refresh'}
 PROFILE={'user_id':USER,'display_name':'HQ Test','email':'test@example.invalid','role':'hq','store_id':None}
@@ -10,11 +11,12 @@ BASE_TICKET={'id':TICKET,'ticket_no':1,'store_id':STORE,'created_by':USER,'title
 class Quiet(http.server.SimpleHTTPRequestHandler):
  def log_message(self,*args):pass
 async def main():
+ ARTIFACTS.mkdir(exist_ok=True)
  server=http.server.ThreadingHTTPServer(('127.0.0.1',0),functools.partial(Quiet,directory=str(ROOT)))
  threading.Thread(target=server.serve_forever,daemon=True).start()
  async with async_playwright() as p:
-  browser=await p.chromium.launch(executable_path='/usr/bin/chromium',headless=True,args=['--no-sandbox'])
-  context=await browser.new_context(viewport={'width':412,'height':915})
+  browser=await p.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH') or None,headless=True,args=['--no-sandbox'])
+  context=await browser.new_context(viewport={'width':412,'height':915},service_workers='block')
   page=await context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   state={'tickets':[BASE_TICKET.copy()],'role':'hq','refresh':0,'denied':False,'upload_fail':False,'creates':0,'comments':0,'delay_detail':False,'reopen':'pending','patches':0}
   async def route(r):
@@ -47,7 +49,7 @@ async def main():
    elif '/ops_notifications' in url:body=[]
    else:raise AssertionError('Unexpected external request: '+url)
    await r.fulfill(status=code,content_type='application/json',body=json.dumps(body))
-  await page.route('**/*',route)
+  await context.route('**/*',route)
   await page.add_init_script('localStorage.setItem("hanokops_session",'+json.dumps(json.dumps(SESSION))+')')
   await page.goto(f'http://127.0.0.1:{server.server_port}/android/app/src/main/assets/index.html')
   await page.wait_for_selector('#homeCapture');await page.wait_for_function('!document.querySelector("#loading.show")')
@@ -78,7 +80,7 @@ async def main():
   print('PASS: store login cannot enter HQ workspace')
   state['role']='hq';await page.reload();await page.wait_for_selector('#homeCapture');await page.evaluate('newTicket()');assert await page.evaluate('handleAndroidBack()');assert not await page.locator('#detail').evaluate('(e)=>e.classList.contains("show")')
   await page.evaluate('go("tickets")');assert await page.evaluate('handleAndroidBack()');assert await page.locator('#homeCapture').count()==1
-  await page.screenshot(path=str(ROOT/'tests/hq-home.png'),full_page=True)
+  await page.screenshot(path=str(ARTIFACTS/'hq-home.png'),full_page=True)
   print('PASS: Android Back closes dialog, then returns to Today')
   assert not errors,errors
   print('PASS: no browser runtime errors')

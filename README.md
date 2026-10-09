@@ -4,9 +4,20 @@ Internal operations system for Hanok Group.
 
 ## Current version
 
-**报告老板 Android App v0.8.3 (local candidate; not released)**
+**报告老板 Android App v0.9.0 / code 13 (local account-management candidate; not released)**
 
 The HQ app is designed around the owner's daily operating workflow rather than a generic task list.
+
+### Account management (candidate)
+
+- Active administrators can create individual store-staff and partner accounts.
+- Store staff belong to one store; partners can view and follow up on one or more assigned stores.
+- Administrators can change those store assignments and deactivate an account without deleting history.
+- Existing shared-store sign-ins remain compatible and keep their original store binding.
+- Interrupted creation can be resumed from "Setup to finish" without resetting an existing password.
+- There is no cost-approval workflow or creation of HQ/administrator roles.
+
+The frontend and backend must be released together after the shared-project authorization audit. See `docs/ACCOUNT-MANAGEMENT.md` for the current validation and release gates and `docs/ACCOUNT-BACKEND.md` for security details.
 
 ### Today
 
@@ -114,4 +125,4 @@ This repository is independent from individual store repositories.
 
 Run `npm ci --ignore-scripts && npm run check && npm test` for mocked client regression checks. With JDK 17 and Android SDK 35 installed, run `cd android && ./gradlew --no-daemon assembleDebug lintDebug`.
 
-The 0.8.3 candidate is not deployed or released. A locally signed APK exists under the new release identity documented in `docs/ANDROID-SIGNING.md`; the private key is not stored in this repository. The public workflows run offline client regression tests plus Android compilation and lint. Live-service, account, deployment, and real-device validation are separate from this public source candidate. Never distribute a debug APK as a production update.
+The 0.9.0 account-management candidate is not deployed or released, and no signed 0.9.0 APK has been built. It preserves the 0.8.4 login-crash fix and approved release identity documented in `docs/ANDROID-SIGNING.md`; the private key is not stored in this repository. The public workflows run offline client regression tests plus Android compilation and lint. Live-service, account, deployment, and real-device validation are separate from this public source candidate. Never distribute a debug APK as a production update.

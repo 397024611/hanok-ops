@@ -2,7 +2,7 @@ name: Build signed Report Boss APK
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/report-boss-v0.8.4-login-hotfix]
   workflow_dispatch:
 
 jobs:
@@ -74,10 +74,11 @@ jobs:
           test -x "$ZIPALIGN"
           test -x "$AAPT"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee signature.txt
-          grep -q "Signer #1 certificate SHA-256 digest: cc4e046b6cec589ac00310ee4ea8f62506cfd45a44114e15c23875f4fdd9f92f" signature.txt
+          node scripts/verify-apk-certificate.cjs signature.txt fd9dcc1f8ddcc0a600e93cc0ebfb17ad53b98eac23df06a8f0b828b3bf5e6a4f
           "$ZIPALIGN" -c 4 "$APK"
           "$AAPT" dump badging "$APK" | tee apk-badging.txt
-          grep -Fq "package: name='com.hanokgroup.ops' versionCode='11' versionName='0.8.3'" apk-badging.txt
+          grep -Fq "package: name='com.hanokgroup.ops' versionCode='13' versionName='0.9.0'" apk-badging.txt
+          grep -Fq "uses-permission: name='android.permission.ACCESS_NETWORK_STATE'" apk-badging.txt
           if grep -q 'application-debuggable' apk-badging.txt; then
             echo "::error::Release APK must not be debuggable"
             exit 1

@@ -251,6 +251,6 @@ test('store: legacy image previews expand inline without blob document navigatio
 test('store: temporary startup outage offers retry without discarding session', async t => {
   let fail = true;
   const a = await fixture(t, { saved: JSON.stringify(SESSION), hook: req => req.url.pathname.endsWith('ops_profiles') && fail ? response({message:'Temporary outage'}, 503) : null });
-  await until(() => a.doc.body.textContent.includes('Retry connection')); assert.equal(a.evaluate('session.access_token'), 'test-access');
+  await until(() => a.doc.getElementById('app').textContent.includes('Retry connection')); assert.equal(a.evaluate('session.access_token'), 'test-access');
   fail = false; await a.w.boot(); await a.ready(); assert.equal(a.doc.querySelectorAll('.ticket').length, 1);
 });

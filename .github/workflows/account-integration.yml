@@ -1,0 +1,38 @@
+name: Isolated account integration
+
+# No production deployments, hosted projects, repository secrets, or external users.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  local-supabase:
+    if: github.event_name == 'pull_request' || github.ref != 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DO_NOT_TRACK: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22.16.0'
+      - name: Run real local Auth, REST, Storage, and Edge functions
+        # The official npm CLI and its platform binary are pinned. The runner
+        # creates its own temporary HOME/workdir; no Auth state is saved in repo.
+        run: npm exec --yes --package=supabase@2.120.0 -- node tests/account-integration.mjs
+      - name: Ensure isolated containers and data volumes are removed
+        if: always()
+        # This is a second cleanup path for timeout/cancellation, scoped to this
+        # test's fixed local project ID. Never use --all or a hosted project flag.
+        run: |
+          cleanup_status=0
+          npm exec --yes --package=supabase@2.120.0 -- supabase stop \
+            --project-id reportboss-accounts-integration --no-backup >/dev/null 2>&1 || cleanup_status=$?
+          rm -rf "${RUNNER_TEMP}"/reportboss-account-integration-*
+          exit "$cleanup_status"

@@ -6,6 +6,9 @@
 <style>
 :root{--navy:#071a29;--navy2:#0d2b41;--ivory:#f6f2ea;--paper:#fffdf9;--gold:#b79254;--gold2:#d9bd83;--text:#112230;--muted:#77828c;--red:#d94e5b;--blue:#4d87ca;--green:#3d946b;--amber:#c98d36;--line:#e5ddd2}
 *{box-sizing:border-box}html,body{margin:0;height:100%;background:var(--navy);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--text);overflow:hidden}button,input,textarea,select{font:inherit}button{cursor:pointer}#app{height:100%;overflow:hidden;background:var(--ivory)}.hidden{display:none!important}.screen{height:100%;display:flex;flex-direction:column}.top{background:linear-gradient(160deg,#061827,#0c2a40);color:#fff;padding:calc(22px + env(safe-area-inset-top)) 18px 20px}.brand{font:700 30px Georgia,serif}.tagline{font-size:11px;letter-spacing:.12em;color:#9fb0bd;margin-top:2px}.headrow{display:flex;justify-content:space-between;align-items:center}.iconBtn{width:38px;height:38px;border:1px solid #ffffff1e;background:#ffffff09;color:#fff;border-radius:19px}.greet{font-size:21px;font-weight:750;margin-top:19px}.sub{color:#a8b5bf;font-size:12px;margin-top:4px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:15px}.stat{border:1px solid #ffffff16;background:#ffffff0b;border-radius:15px;padding:11px 6px;text-align:center}.stat b{display:block;font-size:23px}.stat small{font-size:10px}.stat.red{color:#ff8290}.stat.blue{color:#82b7f4}.stat.gold{color:#e7c984}.content{flex:1;overflow:auto;padding:0 14px calc(86px + env(safe-area-inset-bottom));scrollbar-width:none}.content::-webkit-scrollbar{display:none}.sectionTitle{display:flex;justify-content:space-between;align-items:center;margin:20px 2px 10px;font-size:17px;font-weight:800}.sectionTitle button{border:0;background:none;color:var(--muted);font-size:11px}.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 24px #263b4d0b;margin-bottom:10px}.ticket{padding:13px 14px;position:relative}.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}.pill{padding:4px 8px;border-radius:999px;font-size:10px;font-weight:800;text-transform:capitalize}.pill.red{background:#ffe8eb;color:#bd3342}.pill.blue{background:#e8f2ff;color:#2f6fab}.pill.gold{background:#f8ecd9;color:#986422}.pill.green{background:#e6f5ec;color:#287b56}.pill.gray{background:#edf0f2;color:#67737d}.store{font-size:11px;color:#56636e;font-weight:700}.age{font-size:10px;color:#8b949c}.ticket h3{margin:9px 0 4px;font-size:15px}.ticket p{margin:0;color:#697680;font-size:12px;line-height:1.4;padding-right:18px}.chev{position:absolute;right:14px;bottom:17px;color:#9aa4ac}.nav{position:fixed;z-index:30;left:0;right:0;bottom:0;height:calc(72px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#071a29f2;border-top:1px solid #ffffff15;display:grid;grid-template-columns:repeat(5,1fr);backdrop-filter:blur(16px)}.nav button{border:0;background:none;color:#7f909d;font-size:10px;display:grid;place-items:center;align-content:center;gap:4px}.nav button b{font-size:19px;font-weight:400}.nav button.active{color:#e4bf77}.fab{position:fixed;z-index:31;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));width:54px;height:54px;border-radius:27px;border:0;background:linear-gradient(135deg,#d9b97d,#9b7139);color:#fff;font-size:27px;box-shadow:0 12px 30px #6a4b284c}.pageHead{background:linear-gradient(160deg,#061827,#0d2a40);color:#fff;padding:calc(24px + env(safe-area-inset-top)) 18px 18px;display:flex;justify-content:space-between;align-items:center}.pageHead h1{font:700 27px Georgia,serif;margin:0}.pageHead button{background:none;border:0;color:white;font-size:20px}.filters{display:flex;gap:7px;padding:10px 14px 6px;overflow:auto}.filters button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 11px;font-size:11px;color:#66717a;white-space:nowrap}.filters .active{background:var(--navy);color:#fff;border-color:var(--navy)}.storeCard{padding:12px 13px}.storeCard h3{margin:0;font-size:14px}.address{font-size:10px;color:#8b949d;margin-top:3px}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.kpi{border-radius:10px;padding:7px 3px;text-align:center;font-size:9px}.kpi b{display:block;font-size:14px}.kpi.open{background:#e9f3ff;color:#2867ab}.kpi.urgent{background:#ffe9ec;color:#b93644}.kpi.wait{background:#fbefdc;color:#96641f}.kpi.done{background:#e7f5ec;color:#287b54}.overlay{position:fixed;z-index:100;inset:0;background:var(--navy);display:none;overflow:auto}.overlay.show{display:block}.detailTop{padding:calc(22px + env(safe-area-inset-top)) 16px 13px;color:#fff;display:flex;justify-content:space-between;align-items:center}.detailTop button{border:0;background:none;color:#fff;font-size:24px}.sheet{background:var(--ivory);min-height:calc(100% - 62px);border-radius:24px 24px 0 0;padding:16px 14px calc(92px + env(safe-area-inset-bottom))}.detailCard{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px}.detailCard h2{font:700 25px Georgia,serif;margin:8px 0 6px}.desc{font-size:13px;color:#5f6c76;line-height:1.5}.meta{background:#f4f1ec;border-radius:13px;padding:11px 12px;margin:14px 0;display:grid;gap:9px;font-size:12px}.timeline{margin-top:16px}.tl{display:grid;grid-template-columns:14px 1fr auto;gap:8px;margin:12px 0;font-size:11px}.tl i{width:8px;height:8px;border-radius:50%;background:var(--gold);margin-top:4px}.tl strong{display:block;font-size:12px}.tl span{color:#8b949c}.actions{position:fixed;z-index:110;left:0;right:0;bottom:0;background:#fffdf9f3;display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--line);backdrop-filter:blur(16px)}.actions button{border:1px solid #d9d3ca;background:#fff;border-radius:11px;padding:13px 5px;font-size:12px;font-weight:800}.actions .complete{background:linear-gradient(135deg,#cba967,#8f6835);border:0;color:#fff}.form label{display:block;font-size:12px;font-weight:800;margin:14px 0 7px}.form input,.form textarea,.form select{width:100%;border:1px solid #ded7cd;background:#fff;border-radius:12px;padding:13px;color:#182633;outline:none}.form textarea{min-height:95px;resize:none}.primary{width:100%;border:0;border-radius:13px;background:linear-gradient(135deg,#cba967,#8f6835);color:#fff;font-weight:800;padding:15px;margin-top:18px}.secondary{width:100%;border:1px solid #d8d2c8;border-radius:13px;background:#fff;color:#253645;font-weight:800;padding:14px;margin-top:9px}.login{height:100%;background:linear-gradient(165deg,#061827 0,#0d2b41 55%,#0b2030 100%);color:#fff;padding:calc(50px + env(safe-area-inset-top)) 24px 24px;display:flex;flex-direction:column}.loginLogo{font:700 42px Georgia,serif}.loginTag{color:#a9b6c0;letter-spacing:.13em;font-size:10px;margin-top:5px}.loginBox{margin-top:auto;margin-bottom:auto;background:#ffffff0d;border:1px solid #ffffff16;border-radius:22px;padding:18px;backdrop-filter:blur(16px)}.loginBox h2{margin:0 0 5px;font-size:21px}.loginBox p{margin:0 0 14px;color:#aab7c0;font-size:12px}.loginBox input{width:100%;background:#ffffff0d;color:#fff;border:1px solid #ffffff1c;border-radius:12px;padding:13px;margin:6px 0;outline:none}.loginBox input::placeholder{color:#8595a1}.loginBox .primary{margin-top:10px}.loginBox .secondary{background:#ffffff09;color:#d9e1e6;border-color:#ffffff1d}.error{color:#ff93a0;font-size:11px;min-height:16px;margin-top:7px}.sync{font-size:10px;color:#8fa0ac;display:flex;align-items:center;gap:5px}.sync i{width:7px;height:7px;border-radius:50%;background:#4db57e}.pending{padding:22px;text-align:center}.pending h2{font:700 25px Georgia,serif}.pending p{font-size:13px;color:#66737d;line-height:1.5}.empty{text-align:center;padding:45px 20px;color:#89949c}.toast{position:fixed;z-index:200;left:50%;bottom:100px;transform:translateX(-50%);background:#0b2437;color:#fff;padding:11px 16px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transition:.25s;max-width:85%;text-align:center}.toast.show{opacity:1}.loading{position:fixed;z-index:250;inset:0;background:#071a29cc;color:#fff;display:none;place-items:center}.loading.show{display:grid}.spinner{width:34px;height:34px;border:3px solid #ffffff2b;border-top-color:#d9bd83;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.comment{padding:10px 12px;background:#f5f2ed;border-radius:11px;margin-top:8px}.comment b{font-size:11px}.comment p{font-size:12px;margin:4px 0 0;color:#66727c}.attachments{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:10px 0 14px}.attachment{border:1px solid var(--line);background:#f5f2ed;border-radius:12px;overflow:hidden;min-height:72px;display:grid;place-items:center}.attachment img{width:100%;height:130px;object-fit:cover}.attachment button{width:100%;height:100%;min-height:72px;border:0;background:#f5f2ed;font-size:11px;font-weight:800;color:#42515c}.notice{padding:12px 13px}.notice.unread{border-left:3px solid var(--gold)}.notice h3{margin:7px 0 4px;font-size:14px}.notice p{margin:0;font-size:11px;color:#697680}.reopenCard{background:#fff3df;border:1px solid #ead1a2;border-radius:13px;padding:12px;margin:12px 0}.reopenCard p{font-size:11px;color:#735c32;line-height:1.45}.reopenActions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.reopenActions button{border:1px solid #d9d0c3;background:#fff;border-radius:10px;padding:11px;font-weight:800}.reopenActions .approve{background:#193149;color:#fff;border-color:#193149}.ticketMeta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;font-size:10px;color:#8b7650}.ticketMeta span{background:#f4efe6;border-radius:999px;padding:4px 7px}.quickGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0 6px}.quickGrid button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:12px 6px;font-size:11px;font-weight:800;color:#243746}.quickGrid button b{display:block;font-size:18px;margin-bottom:3px;color:#aa8246}.miniEmpty{padding:16px 8px;color:#8c969e;font-size:12px;text-align:center}.sectionTitle .count{font-size:10px;color:#fff;background:#1d3447;border-radius:999px;padding:4px 8px}.storeCard.tap{cursor:pointer;transition:.12s}.storeCard.tap:active{transform:scale(.99)}.storeHero{background:linear-gradient(160deg,#061827,#0d2a40);color:#fff;border-radius:18px;padding:16px;margin-bottom:12px}.storeHero h2{font:700 25px Georgia,serif;margin:4px 0}.storeHero p{margin:0;color:#a8b5bf;font-size:11px}.storeOverview{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}.storeOverview .box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}.storeOverview .box b{display:block;font-size:22px}.storeOverview .box span{font-size:10px;color:#77828c}.storeActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.storeActions button{border:1px solid #d8d2c8;background:#fff;border-radius:12px;padding:12px;font-weight:800;color:#263846}.storeActions .primaryMini{background:linear-gradient(135deg,#cba967,#8f6835);color:#fff;border:0}.captureBox{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin:14px 0}.captureBox textarea{width:100%;min-height:86px;border:0;outline:0;resize:none;font-size:15px;line-height:1.45;color:#172a39;background:transparent}.captureActions{display:grid;grid-template-columns:52px 1fr;gap:8px;margin-top:10px}.captureActions button{border:1px solid #d8d2c8;background:#fff;border-radius:13px;padding:12px;font-weight:850}.captureActions .captureGo{background:linear-gradient(135deg,#cba967,#8f6835);border:0;color:#fff}.captureHint{font-size:10px;color:#89949c;margin-top:6px}.projectCard{padding:14px}.projectCard h3{margin:7px 0 4px;font-size:15px}.projectCard p{margin:0;color:#6a7680;font-size:11px;line-height:1.4}.projectStage{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:800;color:#755a2f;background:#f6ead5;border-radius:999px;padding:5px 8px}.projectMeta{display:flex;justify-content:space-between;gap:8px;margin-top:10px;color:#8b949c;font-size:10px}.projectNext{margin-top:9px;padding:9px 10px;background:#f4f1ec;border-radius:10px;font-size:11px;color:#495965}.projectNext b{color:#243746}.inlineBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}.inlineBtns button{border:1px solid #d8d2c8;background:#fff;border-radius:12px;padding:12px;font-weight:800}.inlineBtns .gold{background:linear-gradient(135deg,#cba967,#8f6835);border:0;color:#fff}.voicePulse{font-size:20px}.searchBox{display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 14px 4px}.searchBox input{border:1px solid var(--line);background:#fff;border-radius:12px;padding:11px 12px;outline:none}.searchBox button{border:0;background:var(--navy);color:#fff;border-radius:12px;padding:0 14px;font-weight:800}.briefGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:12px 0}.briefStat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px}.briefStat b{display:block;font-size:23px}.briefStat span{font-size:10px;color:#77828c}.briefStore{padding:11px 12px}.briefStore h3{margin:0;font-size:13px}.briefStore p{margin:4px 0 0;font-size:11px;color:#6e7982}.aiBadge{display:inline-flex;align-items:center;gap:5px;background:#e9f0ff;color:#315e9b;border-radius:999px;padding:5px 8px;font-size:10px;font-weight:850}.aiPanel{background:linear-gradient(145deg,#f8fbff,#f2f6fb);border:1px solid #d9e4f0;border-radius:16px;padding:13px;margin:12px 0}.aiPanel h3{margin:0 0 6px;font-size:14px}.aiPanel p{margin:0;color:#5d6c79;font-size:12px;line-height:1.5}.aiAnswer{white-space:pre-wrap;font-size:13px;line-height:1.55;color:#283a49;background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px;margin-top:10px}.aiQuestion{min-height:120px!important}.aiStatus{font-size:10px;color:#7f8d98;margin-top:7px}
+
+/* Account management */
+.accountContent{padding:18px 16px 36px}.accountIntro{margin:0 0 18px}.accountIntro h2{font:700 28px Georgia,serif;margin:8px 0}.accountIntro p{color:#657480;font-size:13px;line-height:1.55;margin:0}.eyebrow{font-size:10px;letter-spacing:.12em;font-weight:800;color:#977343}.accountSummary{display:grid;grid-template-columns:1fr 1fr;gap:10px}.accountSummary div{background:#eae5dc;border-radius:14px;padding:14px}.accountSummary b{display:block;font-size:25px;color:#0d2b41}.accountSummary span{font-size:11px;color:#657480}.accountCard{padding:16px;margin-bottom:12px}.accountCard h3{margin:14px 0 4px}.accountEmail{font-size:12px;color:#66737d;overflow-wrap:anywhere;margin:0}.accountScope{font-size:12px;color:#495c69;line-height:1.5;margin:12px 0}.accountStoreChoice{display:flex!important;align-items:center;gap:11px;border:1px solid #ddd5c8;background:#fff;border-radius:12px;padding:13px;margin:8px 0!important}.accountStoreChoice input{width:19px!important;height:19px;padding:0;accent-color:#aa8246;flex-shrink:0}.accountStoreChoice span{font-size:13px;font-weight:700}.accountStoreChoice small{display:block;font-size:10px;color:#7d8b94;margin-top:3px}.accountHint{font-size:12px;color:#677680;line-height:1.6}.accountStatus{font-size:12px;line-height:1.5;margin-top:14px;min-height:20px;color:#a23440;overflow-wrap:anywhere}.accountContent fieldset{border:0;padding:0;margin:0;min-width:0}.accountContent button:disabled{opacity:.55;cursor:wait}.accountContent input:focus-visible,.accountContent select:focus-visible,.accountContent button:focus-visible{outline:3px solid #4d87ca;outline-offset:3px}.dangerText{color:#b43b48!important}.dangerButton{background:#ab3643}.deactivateCard h2{font:700 25px Georgia,serif}.deactivateCard p{font-size:13px;line-height:1.6;color:#5c6c78}
 </style></head><body>
 <div id="app"></div><div id="detail" class="overlay"></div><div id="toast" class="toast"></div><div id="loading" class="loading"><div class="spinner"></div></div>
 <script>
@@ -68,7 +71,7 @@ async function api(path,opts={},retry=true){
     if(epoch!==sessionEpoch)throw new Error("Session changed");
     if(ok)return api(path,opts,false);
   }
-  if(!res.ok){let msg="Request failed ("+res.status+")";try{const j=await res.json();msg=j.message||j.error_description||j.hint||j.details||msg}catch{}if(epoch!==sessionEpoch)throw new Error("Session changed");if(res.status===401)logout();throw new Error(msg)}
+  if(!res.ok){let msg="Request failed ("+res.status+")",code="";try{const j=await res.json();msg=j.error||j.message||j.error_description||j.hint||j.details||msg;code=j.error||j.code||""}catch{}if(epoch!==sessionEpoch)throw new Error("Session changed");if(res.status===401)logout();const error=new Error(msg);error.code=code;error.status=res.status;throw error}
   if(res.status===204)return null;
   const txt=await res.text();if(epoch!==sessionEpoch)throw new Error("Session changed. Please sign in again.");return txt?JSON.parse(txt):null;
 }
@@ -245,7 +248,7 @@ async function signUp(){
   }catch(e){err.textContent=e.message}finally{showLoading(false)}
 }
 function logout(){
-  sessionEpoch++;clearNativeSession();session=null;profile=null;stores=[];tickets=[];notifications=[];people=[];projects=[];
+  sessionEpoch++;clearAccountManagement();clearNativeSession();session=null;profile=null;stores=[];tickets=[];notifications=[];people=[];projects=[];
   page="home";filter="active";searchText="";recoveryAccessToken="";pendingUpdateUrl="";ticketDraft=null;pendingTicketDraft=null;commentDrafts.clear();
   localStorage.removeItem("hanokops_session");localStorage.removeItem("hanokops_pending_ticket");
   clearInterval(refreshTimer);refreshTimer=null;closeDetail();showLoading(false);showLogin();
@@ -256,9 +259,10 @@ async function boot(restoreNative=true){
   if(restoreNative)hydrateNativeSession();syncNativeSession();
   showLoading(true);
   try{
-    const ps=await api("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(session.user.id)+"&select=user_id,email,display_name,role,store_id");
+    const ps=await api("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(session.user.id)+"&select=user_id,email,display_name,role,store_id,active");
     profile=ps&&ps[0];if(!profile)throw new Error("Profile not found");
-    if(profile.role==="store"){logout();const e=document.getElementById("loginErr");if(e)e.textContent="Store accounts use the separate Store Report Portal. This app is for HQ and administrators.";return}
+    if(profile.active===false){logout();document.getElementById("loginErr").textContent="This account has been deactivated. Contact your administrator.";return}
+    if(["store","partner"].includes(profile.role)){logout();const e=document.getElementById("loginErr");if(e)e.textContent="Store accounts use the separate Store Report Portal. This app is for HQ and administrators.";return}
     if(!["admin","hq","pending"].includes(profile.role))throw new Error("This account has no application access");
     if(profile.role==="pending"){render();return}
     stores=await api("/rest/v1/ops_stores?select=id,code,name,active&active=eq.true&order=name.asc")||[];loadLocalProjects();loadPendingTicketDraft();
@@ -289,14 +293,19 @@ async function loadNotifications(silent=false){if(!profile||profile.role==="pend
 function notifyNewNotifications(){let seen=[];try{seen=JSON.parse(localStorage.getItem("hanokops_notified_ids")||"[]")}catch{}const set=new Set(seen);let changed=false;for(const n of notifications){if(!n.read_at&&!set.has(n.id)){if(window.AndroidApp&&typeof window.AndroidApp.notify==="function"){try{window.AndroidApp.notify(n.title,n.body||"报告老板提醒",n.ticket_id||"")}catch{}}set.add(n.id);changed=true}}if(changed)localStorage.setItem("hanokops_notified_ids",JSON.stringify(Array.from(set).slice(-300)))}
 async function refreshAll(){
   if(refreshRunning||!isHQ())return;refreshRunning=true;
-  try{await Promise.all([loadTickets(true),loadNotifications(true)]);if(["home","tickets","alerts","stores"].includes(page))render(true)}finally{refreshRunning=false}
+  try{
+    const current=await api("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(session.user.id)+"&select=user_id,email,display_name,role,store_id,active");
+    if(!current?.[0]||current[0].active===false||!["admin","hq"].includes(current[0].role)){logout();document.getElementById("loginErr").textContent="Your access has changed. Contact your administrator.";return}
+    profile=current[0];if(page==="accounts"&&!isAccountAdmin()){clearAccountManagement();page="profile";render()}
+    await Promise.all([loadTickets(true),loadNotifications(true)]);if(["home","tickets","alerts","stores"].includes(page))render(true)
+  }catch(e){if(session)lastSyncError=e.message}finally{refreshRunning=false}
 }
 
 async function loadEvents(id){return await api("/rest/v1/ops_ticket_events?ticket_id=eq."+id+"&select=id,event_type,message,details,created_at&order=created_at.asc")||[]}
 async function loadComments(id){return await api("/rest/v1/ops_ticket_comments?ticket_id=eq."+id+"&select=id,author_id,body,created_at&order=created_at.asc")||[]}
 
 function showLogin(){
-  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="forgotPassword()">Forgot password</button><div id="recoveryTools" class="hidden" style="margin-top:10px"><input id="recoveryLink" type="url" placeholder="Paste reset link from email"><button class="secondary" onclick="verifyRecoveryLink()">Continue reset</button></div><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.8.3</div></div>'
+  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="forgotPassword()">Forgot password</button><div id="recoveryTools" class="hidden" style="margin-top:10px"><input id="recoveryLink" type="url" placeholder="Paste reset link from email"><button class="secondary" onclick="verifyRecoveryLink()">Continue reset</button></div><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.9.0</div></div>'
 }
 
 function nav(){const unread=notifications.filter(n=>!n.read_at).length;
@@ -312,7 +321,7 @@ function ticketCard(t){
   return '<div class="card ticket" onclick="openTicket(\''+t.id+'\')"><div class="row between"><div class="row"><span class="pill '+(urgent?"red":statusClass(t.status))+'">'+(urgent?"Urgent":statusLabel(t.status))+'</span><span class="store">'+escapeHtml(s.name)+'</span></div><span class="age">'+age(t.created_at)+'</span></div><h3>'+escapeHtml(t.title)+'</h3><p>'+escapeHtml(t.description||t.category)+'</p>'+(meta.length?'<div class="ticketMeta">'+meta.map(x=>'<span>'+escapeHtml(x)+'</span>').join("")+'</div>':'')+'<span class="chev">›</span></div>'
 }
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function isHQ(){return profile&&["admin","hq"].includes(profile.role)}
+function isHQ(){return profile&&profile.active!==false&&["admin","hq"].includes(profile.role)}
 function activeTickets(){return tickets.filter(t=>t.status!=="completed")}
 function localDayBounds(){const now=new Date(),start=new Date(now),end=new Date(now);start.setHours(0,0,0,0);end.setHours(23,59,59,999);return{now,start,end}}
 function isOverdue(t){return !!(t&&t.status!=="completed"&&t.due_at&&new Date(t.due_at)<new Date())}
@@ -473,14 +482,14 @@ function scheduleUpdateCheck(){
 }
 function profilePage(){
   const s=profile.store_id?storeFor(profile.store_id):null;
-  return '<div class="screen"><div class="pageHead"><h1>Profile</h1><button onclick="go(\'home\')">×</button></div><main class="content" style="padding-top:14px"><div class="card ticket"><h3>'+escapeHtml(profile.display_name)+'</h3><p>'+escapeHtml(profile.email||"")+'</p><div style="margin-top:10px"><span class="pill blue">'+escapeHtml(profile.role)+'</span>'+(s?' <span class="pill gold">'+escapeHtml(s.name)+'</span>':'')+'</div></div><div class="card ticket"><h3>报告老板 <span id="profileVersion">'+escapeHtml(currentAppVersion())+'</span></h3><p>Today, Inbox, Projects, Quick Capture and AI are enabled.</p><button class="secondary" style="margin-top:10px" onclick="checkForAppUpdate(false)">Check for updates</button></div><button class="secondary" onclick="logout()">Sign out</button></main></div>'
+  return '<div class="screen"><div class="pageHead"><h1>Profile</h1><button onclick="go(\'home\')">×</button></div><main class="content" style="padding-top:14px"><div class="card ticket"><h3>'+escapeHtml(profile.display_name)+'</h3><p>'+escapeHtml(profile.email||"")+'</p><div style="margin-top:10px"><span class="pill blue">'+escapeHtml(profile.role)+'</span>'+(s?' <span class="pill gold">'+escapeHtml(s.name)+'</span>':'')+'</div></div><div class="card ticket"><h3>报告老板 <span id="profileVersion">'+escapeHtml(currentAppVersion())+'</span></h3><p>Today, Inbox, Projects, Quick Capture and AI are enabled.</p><button class="secondary" style="margin-top:10px" onclick="checkForAppUpdate(false)">Check for updates</button></div>'+(isAccountAdmin()?'<section class="card ticket"><h3>People & access</h3><p>Create staff and partner accounts, assign stores and remove access.</p><button id="accountManagementButton" class="secondary" onclick="openAccounts()">Account management</button></section>':'')+'<button class="secondary" onclick="logout()">Sign out</button></main></div>'
 }
 function pendingPage(){
   return '<div class="screen"><div class="pageHead"><h1>报告老板</h1><button></button></div><main class="content" style="padding-top:30px"><div class="card pending"><span class="pill gold">Pending setup</span><h2>Your account is ready.</h2><p>This account has not yet been assigned to HQ or a store. Send the account email to the 报告老板 administrator, then sign in again after assignment.</p><button class="secondary" onclick="logout()">Sign out</button></div></main></div>'
 }
-function render(preserve=false){const saved=preserve?[...app.querySelectorAll("input[id],textarea[id]")].map(e=>({id:e.id,value:e.value,start:e.selectionStart,end:e.selectionEnd,focused:e===document.activeElement})):[];const scroll=app.querySelector(".content")?.scrollTop||0;if(!session){showLogin();return}if(!profile)return;if(profile.role==="pending"){app.innerHTML=pendingPage();return}if(page==="home")app.innerHTML=home();else if(page==="tickets")app.innerHTML=ticketList();else if(page==="stores")app.innerHTML=storesPage();else if(page==="projects")app.innerHTML=projectsPage();else if(page==="procurement")app.innerHTML=procurementPage();else if(page==="finance")app.innerHTML=financePage();else if(page==="alerts")app.innerHTML=alertsPage();else app.innerHTML=profilePage();if(preserve){for(const old of saved){const el=document.getElementById(old.id);if(el){el.value=old.value;if(old.focused){el.focus();try{el.setSelectionRange(old.start,old.end)}catch{}}}}const content=app.querySelector(".content");if(content)content.scrollTop=scroll}}
-function go(p){closeDetail();page=p;render()}
-function handleAndroidBack(){const media=detail.querySelector(".mediaPreview");if(media){media.remove();releaseObjectUrls();return true}if(detail.classList.contains("show")){closeDetail();return true}if(session&&page!=="home"){go("home");return true}return false}
+function render(preserve=false){const saved=preserve?[...app.querySelectorAll("input[id],textarea[id]")].map(e=>({id:e.id,value:e.value,start:e.selectionStart,end:e.selectionEnd,focused:e===document.activeElement})):[];const scroll=app.querySelector(".content")?.scrollTop||0;if(!session){showLogin();return}if(!profile)return;if(profile.role==="pending"){app.innerHTML=pendingPage();return}if(page==="home")app.innerHTML=home();else if(page==="tickets")app.innerHTML=ticketList();else if(page==="stores")app.innerHTML=storesPage();else if(page==="projects")app.innerHTML=projectsPage();else if(page==="procurement")app.innerHTML=procurementPage();else if(page==="finance")app.innerHTML=financePage();else if(page==="alerts")app.innerHTML=alertsPage();else if(page==="accounts")app.innerHTML=accountsPage();else app.innerHTML=profilePage();if(preserve){for(const old of saved){const el=document.getElementById(old.id);if(el){el.value=old.value;if(old.focused){el.focus();try{el.setSelectionRange(old.start,old.end)}catch{}}}}const content=app.querySelector(".content");if(content)content.scrollTop=scroll}}
+function go(p){if(page==="accounts"&&p!=="accounts")clearAccountManagement();closeDetail();page=p;render()}
+function handleAndroidBack(){if(page==="accounts"){accountBack();return true}const media=detail.querySelector(".mediaPreview");if(media){media.remove();releaseObjectUrls();return true}if(detail.classList.contains("show")){closeDetail();return true}if(session&&page!=="home"){go("home");return true}return false}
 function startVoiceCapture(){
   if(window.AndroidApp&&typeof window.AndroidApp.startVoiceCapture==="function"){try{window.AndroidApp.startVoiceCapture()}catch(e){toast("Voice capture is unavailable")}}
   else toast("Voice capture is available in the Android app")
@@ -820,6 +829,158 @@ async function createTicket(){
   try{await saveTicketDraft(payload,file,"tickets")}catch(e){toast(e.message)}
 }
 
+
+// Account administration is authorized again on the server for every request.
+// Passwords and incomplete operations stay in memory only and are cleared on exit.
+let accountManagement={accounts:[],pending:[],resume:null,passwordEditable:false,stores:[],loaded:false,busy:false,error:"",notice:"",view:"list",target:null,requestId:null,payload:null,sequence:0};
+function isAccountAdmin(){return !!session&&profile?.role==="admin"&&profile.active!==false}
+function requireAccountAdmin(){if(!isAccountAdmin())throw new Error("Only an active administrator can manage accounts.")}
+function clearAccountManagement(){
+  accountManagement={accounts:[],pending:[],resume:null,passwordEditable:false,stores:[],loaded:false,busy:false,error:"",notice:"",view:"list",target:null,requestId:null,payload:null,sequence:accountManagement.sequence+1};
+  const password=document.getElementById("accountPassword");if(password)password.value="";
+}
+async function accountAction(action,payload={}){
+  requireAccountAdmin();
+  return await api("/functions/v1/ops-admin-accounts",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...payload})});
+}
+async function openAccounts(){
+  try{requireAccountAdmin()}catch(e){toast(e.message);return}
+  closeDetail();clearAccountManagement();page="accounts";render();await loadManagedAccounts();
+}
+async function loadManagedAccounts(){
+  if(!isAccountAdmin()||accountManagement.busy)return;
+  const own=accountManagement,sequence=++own.sequence,epoch=sessionEpoch;own.busy=true;own.error="";
+  if(page==="accounts"&&own.view==="list")render();
+  try{
+    const data=await accountAction("list");
+    if(epoch!==sessionEpoch||own!==accountManagement||sequence!==own.sequence)return;
+    if(!Array.isArray(data?.accounts)||!Array.isArray(data?.stores))throw new Error("The server did not return the account list.");
+    own.accounts=data.accounts;own.pending=Array.isArray(data.pending_requests)?data.pending_requests:[];own.stores=data.stores.filter(s=>s.active!==false);own.loaded=true;
+  }catch(e){if(epoch===sessionEpoch&&own===accountManagement)own.error=e.message}
+  finally{if(epoch===sessionEpoch&&own===accountManagement&&sequence===own.sequence){own.busy=false;if(page==="accounts"&&own.view==="list")render()}}
+}
+function managedAccountName(a){return a.display_name||a.email||"Account"}
+function managedAccountRole(a){if(a.is_legacy_shared)return "Shared store login";return ({store:"Store staff",partner:"Partner",hq:"HQ",admin:"Administrator",pending:"Pending setup"})[a.role]||"Account"}
+function managedStores(a){return (a.store_ids||[]).map(id=>accountManagement.stores.find(s=>s.id===id)?.name||"Unavailable store").join(", ")||"No stores assigned"}
+function accountCard(a,index){
+  const editable=["store","partner"].includes(a.role)&&a.user_id!==session.user.id;
+  return '<section class="card accountCard"><div class="row between"><span class="pill '+(a.role==="partner"?'gold':'blue')+'">'+escapeHtml(managedAccountRole(a))+'</span><span class="pill '+(a.active===false?'gray':'green')+'">'+(a.active===false?'Inactive':'Active')+'</span></div><h3>'+escapeHtml(managedAccountName(a))+'</h3><p class="accountEmail">'+escapeHtml(a.email||"")+'</p><p class="accountScope">'+escapeHtml(["admin","hq"].includes(a.role)?'All stores':managedStores(a))+'</p>'+(editable&&a.active!==false?'<div class="inlineBtns">'+(!a.is_legacy_shared?'<button type="button" onclick="editAccountStores('+index+')">Assign stores</button>':'')+'<button type="button" class="dangerText" onclick="confirmDeactivateAccount('+index+')">Deactivate</button></div>':'')+'</section>';
+}
+function accountsPage(){
+  if(!isAccountAdmin())return profilePage();
+  const state=accountManagement;
+  let body='';
+  if(state.view==="create")body=newAccountForm();
+  else if(state.view==="assign")body=assignAccountForm();
+  else if(state.view==="deactivate")body=deactivateAccountForm();
+  else{
+    const editable=state.accounts.filter(a=>["store","partner"].includes(a.role));
+    body='<div class="accountIntro"><span class="eyebrow">OWNER CONTROLS</span><h2>People & access</h2><p>Give each person their own login and just the stores they need.</p></div><div class="accountSummary"><div><b>'+editable.filter(a=>a.active!==false).length+'</b><span>Active accounts</span></div><div><b>'+editable.filter(a=>a.role==="partner"&&a.active!==false).length+'</b><span>Partners</span></div></div><button id="newAccountButton" type="button" class="primary" '+(!state.loaded||state.busy?'disabled':'')+' onclick="startNewAccount()">+ New account</button><div id="accountListStatus" class="accountStatus" role="status">'+escapeHtml(state.busy?'Loading accounts…':state.error||state.notice)+'</div>'+(state.error?'<button class="secondary" type="button" onclick="loadManagedAccounts()">Retry loading</button>':'')+(state.pending.length?'<div class="sectionTitle"><span>Setup to finish</span></div>'+state.pending.map((p,i)=>'<section class="card accountCard"><span class="pill gold">Incomplete setup</span><h3>'+escapeHtml(p.display_name||p.email)+'</h3><p class="accountEmail">'+escapeHtml(p.email)+'</p><button type="button" class="secondary" onclick="resumeManagedAccount('+i+')">Finish setup</button></section>').join(''):'')+(state.loaded?'<div class="sectionTitle"><span>Accounts</span><button type="button" onclick="loadManagedAccounts()" '+(state.busy?'disabled':'')+'>Refresh</button></div>'+state.accounts.map(accountCard).join(""):'');
+  }
+  return '<div class="screen"><div class="pageHead"><h1>Account management</h1><button type="button" aria-label="Back" onclick="accountBack()">‹</button></div><main class="content accountContent">'+body+'</main></div>';
+}
+function accountBack(){
+  if(accountManagement.view!=="list"){
+    accountManagement.sequence++;accountManagement.view="list";accountManagement.target=null;accountManagement.payload=null;accountManagement.requestId=null;accountManagement.resume=null;accountManagement.passwordEditable=false;accountManagement.busy=false;accountManagement.error="";render();loadManagedAccounts();
+  }else go("profile");
+}
+function startNewAccount(){
+  try{requireAccountAdmin()}catch(e){toast(e.message);return}
+  if(accountManagement.busy||!accountManagement.loaded)return;
+  accountManagement.view="create";accountManagement.resume=null;accountManagement.passwordEditable=false;accountManagement.requestId=crypto.randomUUID();accountManagement.payload=null;accountManagement.error="";render();document.getElementById("accountName")?.focus();
+}
+function storeAssignmentInputs(role,selected=[]){
+  return accountManagement.stores.map((s,i)=>'<label class="accountStoreChoice"><input type="'+(role==="store"?'radio':'checkbox')+'" name="accountStores" id="accountStore'+i+'" value="'+escapeHtml(s.id)+'" '+(selected.includes(s.id)?'checked':'')+'><span>'+escapeHtml(s.name)+'<small>'+escapeHtml(s.code)+'</small></span></label>').join("")||'<p>No active stores are available.</p>';
+}
+function resumeManagedAccount(index){
+  try{requireAccountAdmin()}catch(e){toast(e.message);return}
+  const request=accountManagement.pending[index];if(!request||accountManagement.busy)return;
+  accountManagement.view="create";accountManagement.resume=request;accountManagement.requestId=request.request_id;accountManagement.payload=null;accountManagement.passwordEditable=true;render();
+  document.getElementById("accountName").value=request.display_name;document.getElementById("accountEmail").value=request.email;document.getElementById("accountRole").value=request.role;
+  document.getElementById("accountStoreChoices").innerHTML=storeAssignmentInputs(request.role,request.store_ids||[]);lockAccountCreateFields(true);document.getElementById("accountPassword").focus();
+}
+function lockAccountCreateFields(passwordEditable){
+  const fields=document.getElementById("accountFields");if(!fields)return;fields.disabled=false;
+  for(const input of fields.querySelectorAll("input,select"))input.disabled=!(passwordEditable&&input.id==="accountPassword");
+}
+function newAccountForm(){
+  const resuming=!!accountManagement.resume;
+  return '<div class="accountIntro"><span class="eyebrow">NEW ACCOUNT</span><h2>'+ (resuming?'Finish account setup':'One person. Their stores.')+'</h2><p>'+(resuming?'Retry the original account request. If its sign-in was already created, the previously entered password stays unchanged.':'Staff can report issues for one store. Partners can view and follow up across the stores you choose.')+'</p></div><form id="accountCreateForm" class="form" onsubmit="event.preventDefault();createManagedAccount()"><fieldset id="accountFields"><label for="accountName">Full name</label><input id="accountName" autocomplete="off" maxlength="100" required><label for="accountEmail">Email address</label><input id="accountEmail" type="email" autocomplete="off" maxlength="254" required><label for="accountRole">Account type</label><select id="accountRole" onchange="changeAccountRole()"><option value="store">Store staff · one store</option><option value="partner">Partner · selected stores</option></select><label>Assigned stores</label><div id="accountStoreChoices">'+storeAssignmentInputs("store")+'</div><label for="accountPassword">Initial password</label><input id="accountPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required><p class="accountHint">Use at least 12 characters, up to 72 UTF-8 bytes. Non-English characters can count as several bytes. Share it privately with this person. The password is never displayed in the account list.</p></fieldset><div id="accountActionStatus" class="accountStatus" role="status"></div><button id="accountSubmit" type="submit" class="primary">Create account</button><button type="button" class="secondary" onclick="accountBack()">Cancel</button></form>';
+}
+function changeAccountRole(){
+  if(accountManagement.payload||accountManagement.resume)return;
+  const role=document.getElementById("accountRole").value,selected=selectedAccountStores();
+  document.getElementById("accountStoreChoices").innerHTML=storeAssignmentInputs(role,role==="store"?selected.slice(0,1):selected);
+}
+function selectedAccountStores(){return [...document.querySelectorAll('input[name="accountStores"]:checked')].map(e=>e.value)}
+function validateAccountStores(role,ids){
+  if(!["store","partner"].includes(role))throw new Error("Choose a staff or partner account.");
+  if(!ids.length||role==="store"&&ids.length!==1)throw new Error(role==="store"?"Choose exactly one store for a staff account.":"Choose at least one store for a partner.");
+  if(ids.some(id=>!accountManagement.stores.some(s=>s.id===id)))throw new Error("Choose an available store.");
+}
+async function createManagedAccount(){
+  const state=accountManagement;if(state.busy||state.view!=="create")return;
+  try{
+    requireAccountAdmin();
+    if(state.payload&&state.passwordEditable){const password=document.getElementById("accountPassword").value;if([...password].length<12||new Blob([password]).size>72)throw new Error("Use at least 12 characters and no more than 72 UTF-8 bytes.");state.payload.password=password;state.passwordEditable=false}
+    if(!state.payload){
+      const displayName=document.getElementById("accountName").value.trim(),email=document.getElementById("accountEmail").value.trim().toLowerCase(),role=document.getElementById("accountRole").value,password=document.getElementById("accountPassword").value,storeIds=selectedAccountStores();
+      if(!displayName||displayName.length>100)throw new Error("Enter a name of 1–100 characters.");
+      if(email.length>254||!/^\S+@\S+\.\S+$/.test(email))throw new Error("Enter a valid email address.");
+      if([...password].length<12||new Blob([password]).size>72)throw new Error("Use at least 12 characters and no more than 72 UTF-8 bytes.");
+      validateAccountStores(role,storeIds);state.payload={requestId:state.requestId,email,displayName,role,storeIds,password};
+    }
+    await submitManagedAccountAction("create",state.payload,"Account created. Share the login details privately.");
+  }catch(e){const out=document.getElementById("accountActionStatus");if(out)out.textContent=e.message}
+}
+function editAccountStores(index){
+  try{requireAccountAdmin()}catch(e){toast(e.message);return}
+  const target=accountManagement.accounts[index];if(!target||target.is_legacy_shared||target.active===false||!["store","partner"].includes(target.role)||target.user_id===session.user.id)return;
+  accountManagement.target=target;accountManagement.view="assign";accountManagement.error="";render();
+}
+function assignAccountForm(){
+  const a=accountManagement.target;
+  return '<div class="accountIntro"><span class="eyebrow">STORE ACCESS</span><h2>'+escapeHtml(managedAccountName(a))+'</h2><p>'+escapeHtml(a.email||"")+'</p></div><form class="form" onsubmit="event.preventDefault();saveAccountStores()"><fieldset id="accountFields"><p class="accountHint">'+(a.role==="store"?'Staff accounts belong to exactly one store.':'Partners can view and follow up for each selected store.')+' Removing a store blocks further access to its data.</p><div id="accountStoreChoices">'+storeAssignmentInputs(a.role,a.store_ids||[])+'</div></fieldset><div id="accountActionStatus" class="accountStatus" role="status"></div><button id="accountSubmit" type="submit" class="primary">Save store access</button><button type="button" class="secondary" onclick="accountBack()">Cancel</button></form>';
+}
+async function saveAccountStores(){
+  const state=accountManagement;if(state.busy||state.view!=="assign")return;
+  try{requireAccountAdmin();const storeIds=selectedAccountStores();validateAccountStores(state.target.role,storeIds);await submitManagedAccountAction("assign",{userId:state.target.user_id,storeIds},"Store access updated.")}
+  catch(e){const out=document.getElementById("accountActionStatus");if(out)out.textContent=e.message}
+}
+function confirmDeactivateAccount(index){
+  try{requireAccountAdmin()}catch(e){toast(e.message);return}
+  const target=accountManagement.accounts[index];if(!target||target.active===false||!["store","partner"].includes(target.role)||target.user_id===session.user.id)return;
+  accountManagement.target=target;accountManagement.view="deactivate";accountManagement.error="";render();
+}
+function deactivateAccountForm(){
+  const a=accountManagement.target;
+  return '<section class="card accountCard deactivateCard"><span class="pill red">Remove access</span><h2>Deactivate '+escapeHtml(managedAccountName(a))+'?</h2><p>'+escapeHtml(a.email||"")+'</p><p>This person will lose access to every assigned store, including when already signed in. Their past reports and comments will stay.</p><div id="accountActionStatus" class="accountStatus" role="status"></div><button id="accountSubmit" class="primary dangerButton" type="button" onclick="deactivateManagedAccount()">Deactivate account</button><button type="button" class="secondary" onclick="accountBack()">Keep account active</button></section>';
+}
+async function deactivateManagedAccount(){
+  const state=accountManagement;if(state.busy||state.view!=="deactivate")return;
+  try{requireAccountAdmin();await submitManagedAccountAction("deactivate",{userId:state.target.user_id},"Account deactivated.")}
+  catch(e){const out=document.getElementById("accountActionStatus");if(out)out.textContent=e.message}
+}
+async function submitManagedAccountAction(action,payload,message){
+  const own=accountManagement,epoch=sessionEpoch,sequence=++own.sequence,view=own.view;
+  requireAccountAdmin();own.busy=true;
+  const status=document.getElementById("accountActionStatus"),submit=document.getElementById("accountSubmit"),fields=document.getElementById("accountFields");
+  if(status)status.textContent="Saving…";if(submit)submit.disabled=true;if(fields)fields.disabled=true;
+  try{
+    const result=await accountAction(action,payload);
+    if(epoch!==sessionEpoch||own!==accountManagement||own.sequence!==sequence||own.view!==view)return;
+    if(result?.ok!==true||!result.account?.user_id)throw new Error("The server did not confirm this change.");
+    if(action!=="create"&&result.account.user_id!==payload.userId)throw new Error("The server did not confirm the intended account.");
+    if(action==="deactivate"&&result.account.active!==false)throw new Error("Deactivation was not confirmed.");
+    own.notice=action==="create"&&result.account.active===false?"This account is inactive. It has not been re-enabled.":action==="create"&&result.password_unchanged?"Account setup finished. The original password is unchanged.":message;own.payload=null;own.requestId=null;own.target=null;own.resume=null;own.passwordEditable=false;own.view="list";own.busy=false;render();toast(own.notice);await loadManagedAccounts();
+  }catch(e){
+    if(epoch!==sessionEpoch||own!==accountManagement||own.sequence!==sequence||own.view!==view)return;
+    if(action==="create"&&["password_rejected","invalid_password"].includes(e.code)){own.passwordEditable=true;if(status?.isConnected)status.textContent="This password was rejected. Enter a stronger password below and retry the same account request."}
+    else if(status?.isConnected)status.textContent="Change not confirmed. "+e.message+(action==="create"?" Retry checks the same account request. To change these details, cancel and start again.":" You can safely retry this change.");
+  }finally{
+    if(epoch===sessionEpoch&&own===accountManagement&&own.sequence===sequence&&own.view===view){own.busy=false;if(submit?.isConnected)submit.disabled=false;if(fields?.isConnected){if(action==="create"&&own.payload)lockAccountCreateFields(own.passwordEditable);else fields.disabled=false}}
+  }
+}
 
 // Prevent repeat taps during a pending write, including comment and reopen actions.
 for(const name of ["signIn","signUp","forgotPassword","verifyRecoveryLink","setRecoveredPassword","reviewReopen","assignTicket","startTicket","acceptTicket","saveWaiting","completeTicket","addComment","markAllRead","previewCapture","runAiQuery","loadAiBrief","ticketAiAssist"]){

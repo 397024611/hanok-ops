@@ -8,11 +8,11 @@ button:disabled{opacity:.65;cursor:wait}button:focus-visible,input:focus-visible
 </style></head><body><div class="wrap"><div class="inner"><div class="brand">报告老板</div><div class="tag">ADMIN  -  STORE ACCOUNT MANAGEMENT</div>
 <form id="login" class="card" onsubmit="event.preventDefault();signIn()"><h2>Admin sign in</h2><p>Use your 报告老板 Admin account. Sign in to manage store accounts. Your sign-in password is sent only to Supabase Auth.</p>
 <label for="email">Email</label><input id="email" type="email" autocomplete="username" required><label for="pass">Password</label><input id="pass" type="password" autocomplete="current-password" required><button id="signInButton" class="btn" type="submit">Sign in</button><div id="loginOut" class="out" role="status"></div></form>
-<form id="panel" class="card" style="display:none" onsubmit="event.preventDefault();saveStore()"><h2>Store accounts</h2><p>Create or reset a store login. Staff will use the store name as the username; the internal identity remains hidden.</p>
+<form id="panel" class="card" style="display:none" onsubmit="event.preventDefault();saveStore()"><h2>Store accounts</h2><p>Reset an existing shared store login. Create individual staff and partner accounts in Account management in the HQ app.</p>
 <label for="store">Store / Username</label><select id="store"><option value="HWD">Hanok Woden</option><option value="HWG">Hanok Wagga</option><option value="PDL">Pandan Leaf</option><option value="MTH">Meathouse</option><option value="BTD" selected>BBQTOWN Dickson</option></select>
-<label for="storePass">Temporary password</label><input id="storePass" type="password" autocomplete="new-password" minlength="8" required>
-<div class="note">Recommended: use a different password for each store before rollout. Minimum 8 characters.</div>
-<button id="saveButton" class="btn" type="submit">Create / Reset Store Account</button><button class="btn logout" type="button" onclick="logout()">Sign out</button><div id="out" class="out" role="status"></div></form>
+<label for="storePass">Temporary password</label><input id="storePass" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+<div class="note">Recommended: use a different password for each store before rollout. Minimum 8 characters; maximum 72 UTF-8 bytes.</div>
+<button id="saveButton" class="btn" type="submit">Reset Shared Store Password</button><button class="btn logout" type="button" onclick="logout()">Sign out</button><div id="out" class="out" role="status"></div></form>
 </div></div><script>
 const URL="https://tqfwbsjchespjkxliodo.supabase.co",KEY="sb_publishable_gzlaNquJPCOsgVMb1ZhRdw_X38GSi6s";
 let session=null,epoch=0,controller=new AbortController(),signingIn=false,saving=false,refreshPromise=null;
@@ -48,8 +48,8 @@ async function signIn(){
   try{
     const r=await fetch(URL+"/auth/v1/token?grant_type=password",{method:"POST",signal:AbortSignal.any([controller.signal,AbortSignal.timeout(30000)]),headers:{apikey:KEY,"Content-Type":"application/json"},body:JSON.stringify({email,password})});
     const j=await readJSON(r);if(ownEpoch!==epoch)throw aborted();if(!r.ok)throw new Error(j.error_description||j.message||"Sign in failed");if(!j?.access_token||!j?.user?.id)throw new Error("Invalid sign-in response.");
-    session=j;const profiles=await request("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(j.user.id)+"&select=role,display_name");if(ownEpoch!==epoch)throw aborted();
-    if(!profiles?.[0]||profiles[0].role!=="admin")throw new Error("This account is not an Admin.");
+    session=j;const profiles=await request("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(j.user.id)+"&select=role,display_name,active");if(ownEpoch!==epoch)throw aborted();
+    if(!profiles?.[0]||(profiles[0].role!=="admin"||profiles[0].active===false))throw new Error("This account is not an Admin.");
     el("pass").value="";el("login").style.display="none";el("panel").style.display="block";el("store").focus();
   }catch(e){if(ownEpoch===epoch&&e.name!=="AbortError"){session=null;o.className="out bad";o.textContent=e.message;el("pass").value=""}}
   finally{if(ownEpoch===epoch){signingIn=false;el("signInButton").disabled=false}}
@@ -57,7 +57,7 @@ async function signIn(){
 async function saveStore(){
   if(saving)return;const o=el("out"),password=el("storePass").value,storeCode=el("store").value;
   if(!session){o.className="out bad";o.textContent="Sign in again.";return}
-  if(password.length<8){o.className="out bad";o.textContent="Password must be at least 8 characters.";return}
+  if([...password].length<8||new Blob([password]).size>72){o.className="out bad";o.textContent="Password must be at least 8 characters and at most 72 UTF-8 bytes.";return}
   const ownEpoch=epoch;saving=true;el("saveButton").disabled=true;el("store").disabled=true;el("storePass").disabled=true;o.className="out";o.textContent="Saving...";
   try{
     const result=await request("/functions/v1/ops-admin-store-user",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({storeCode,password})});
