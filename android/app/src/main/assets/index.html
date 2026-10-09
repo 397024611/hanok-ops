@@ -291,13 +291,24 @@ async function loadTickets(silent=false,strict=false){
 
 async function loadNotifications(silent=false){if(!profile||profile.role==="pending")return;const epoch=sessionEpoch;try{const rows=await api("/rest/v1/ops_notifications?select=id,ticket_id,kind,title,body,priority,read_at,created_at,data&order=created_at.desc&limit=100")||[];if(epoch!==sessionEpoch)return;notifications=rows;notifyNewNotifications();if(!silent&&page==="alerts")render()}catch(e){if(!silent)toast(e.message)}}
 function notifyNewNotifications(){let seen=[];try{seen=JSON.parse(localStorage.getItem("hanokops_notified_ids")||"[]")}catch{}const set=new Set(seen);let changed=false;for(const n of notifications){if(!n.read_at&&!set.has(n.id)){if(window.AndroidApp&&typeof window.AndroidApp.notify==="function"){try{window.AndroidApp.notify(n.title,n.body||"报告老板提醒",n.ticket_id||"")}catch{}}set.add(n.id);changed=true}}if(changed)localStorage.setItem("hanokops_notified_ids",JSON.stringify(Array.from(set).slice(-300)))}
+async function refreshStores(){
+  if(!isHQ())return;
+  const epoch=sessionEpoch;
+  let rows;
+  try{rows=await api("/rest/v1/ops_stores?select=id,code,name,active&active=eq.true&order=name.asc")}catch(e){if(epoch!==sessionEpoch)return;throw e}
+  if(epoch!==sessionEpoch||!isHQ())return;
+  if(!Array.isArray(rows))throw new Error("The server did not return the store list.");
+  stores=rows.filter(s=>s.active!==false);
+}
 async function refreshAll(){
   if(refreshRunning||!isHQ())return;refreshRunning=true;
+  const epoch=sessionEpoch;
   try{
     const current=await api("/rest/v1/ops_profiles?user_id=eq."+encodeURIComponent(session.user.id)+"&select=user_id,email,display_name,role,store_id,active");
+    if(epoch!==sessionEpoch)return;
     if(!current?.[0]||current[0].active===false||!["admin","hq"].includes(current[0].role)){logout();document.getElementById("loginErr").textContent="Your access has changed. Contact your administrator.";return}
     profile=current[0];if(page==="accounts"&&!isAccountAdmin()){clearAccountManagement();page="profile";render()}
-    await Promise.all([loadTickets(true),loadNotifications(true)]);if(["home","tickets","alerts","stores"].includes(page))render(true)
+    await Promise.all([loadTickets(true),loadNotifications(true),refreshStores()]);if(epoch!==sessionEpoch)return;if(["home","tickets","alerts","stores"].includes(page))render(true)
   }catch(e){if(session)lastSyncError=e.message}finally{refreshRunning=false}
 }
 
@@ -305,7 +316,7 @@ async function loadEvents(id){return await api("/rest/v1/ops_ticket_events?ticke
 async function loadComments(id){return await api("/rest/v1/ops_ticket_comments?ticket_id=eq."+id+"&select=id,author_id,body,created_at&order=created_at.asc")||[]}
 
 function showLogin(){
-  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="forgotPassword()">Forgot password</button><div id="recoveryTools" class="hidden" style="margin-top:10px"><input id="recoveryLink" type="url" placeholder="Paste reset link from email"><button class="secondary" onclick="verifyRecoveryLink()">Continue reset</button></div><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.9.0</div></div>'
+  app.innerHTML='<div class="login"><div><div class="loginLogo">报告老板</div><div class="loginTag">ONE GROUP · EVERY STORE · ALWAYS IN CONTROL</div></div><div class="loginBox"><h2>Sign in</h2><p>Use your 报告老板 account to continue.</p><input id="email" type="email" autocomplete="email" placeholder="Email"><input id="password" type="password" autocomplete="current-password" placeholder="Password"><div id="loginErr" class="error"></div><button class="primary" onclick="signIn()">Sign in</button><button class="secondary" onclick="forgotPassword()">Forgot password</button><div id="recoveryTools" class="hidden" style="margin-top:10px"><input id="recoveryLink" type="url" placeholder="Paste reset link from email"><button class="secondary" onclick="verifyRecoveryLink()">Continue reset</button></div><button class="secondary" onclick="signUp()">Create account</button></div><div style="font-size:10px;color:#82929f;text-align:center">报告老板 · Hanok Group Operations · v0.9.1</div></div>'
 }
 
 function nav(){const unread=notifications.filter(n=>!n.read_at).length;
@@ -353,7 +364,7 @@ function ticketList(){
   return '<div class="screen"><div class="pageHead"><h1>Tickets</h1><button onclick="newTicket()">＋</button></div><div class="filters">'+["active","mine","today","overdue","urgent","waiting","completed"].map(f=>'<button class="'+(filter===f?"active":"")+'" onclick="filter=\''+f+'\';render()">'+(f==="today"?"Today":f[0].toUpperCase()+f.slice(1))+'</button>').join("")+'</div><div class="searchBox"><input id="ticketSearch" value="'+escapeHtml(searchText)+'" placeholder="Search tickets, stores, people…"><button onclick="applyTicketSearch()">Go</button></div>'+(searchText?'<div style="padding:0 16px 6px;font-size:10px;color:#7b858d">Showing matches for “'+escapeHtml(searchText)+'” · <span onclick="clearTicketSearch()" style="font-weight:800">Clear</span></div>':'')+'<main class="content" style="padding-top:7px">'+(arr.length?arr.map(ticketCard).join(""):'<div class="empty">Nothing here.</div>')+'</main>'+nav()+'</div>'
 }
 function storesPage(){
-  return '<div class="screen"><div class="pageHead"><h1>Stores</h1><button onclick="loadTickets()">↻</button></div><main class="content" style="padding-top:14px">'+stores.map(s=>{const all=tickets.filter(t=>t.store_id===s.id),active=all.filter(t=>t.status!=="completed");return '<div class="card storeCard tap" onclick="openStore(\''+s.id+'\')"><div class="row between"><div><h3>'+escapeHtml(s.name)+'</h3><div class="address">'+s.code+' · Hanok Group</div></div><span class="pill '+(active.some(t=>t.priority==="urgent"||isOverdue(t))?"red":"green")+'">'+(active.some(t=>t.priority==="urgent"||isOverdue(t))?"Needs attention":"Active")+'</span></div><div class="kpis"><div class="kpi open"><b>'+active.length+'</b>Open</div><div class="kpi urgent"><b>'+active.filter(t=>t.priority==="urgent"||isOverdue(t)).length+'</b>Critical</div><div class="kpi wait"><b>'+active.filter(t=>t.status==="waiting").length+'</b>Waiting</div><div class="kpi done"><b>'+all.filter(t=>t.status==="completed").length+'</b>Done</div></div></div>'}).join("")+'</main>'+nav()+'</div>'
+  return '<div class="screen"><div class="pageHead"><h1>Stores</h1><button aria-label="Refresh stores" onclick="refreshAll()">↻</button></div><main class="content" style="padding-top:14px">'+stores.map(s=>{const all=tickets.filter(t=>t.store_id===s.id),active=all.filter(t=>t.status!=="completed");return '<div class="card storeCard tap" onclick="openStore(\''+s.id+'\')"><div class="row between"><div><h3>'+escapeHtml(s.name)+'</h3><div class="address">'+s.code+' · Hanok Group</div></div><span class="pill '+(active.some(t=>t.priority==="urgent"||isOverdue(t))?"red":"green")+'">'+(active.some(t=>t.priority==="urgent"||isOverdue(t))?"Needs attention":"Active")+'</span></div><div class="kpis"><div class="kpi open"><b>'+active.length+'</b>Open</div><div class="kpi urgent"><b>'+active.filter(t=>t.priority==="urgent"||isOverdue(t)).length+'</b>Critical</div><div class="kpi wait"><b>'+active.filter(t=>t.status==="waiting").length+'</b>Waiting</div><div class="kpi done"><b>'+all.filter(t=>t.status==="completed").length+'</b>Done</div></div></div>'}).join("")+'</main>'+nav()+'</div>'
 }
 function openStore(id){
   const s=storeFor(id),all=tickets.filter(t=>t.store_id===id),active=byAttention(all.filter(t=>t.status!=="completed")),critical=active.filter(t=>t.priority==="urgent"||isOverdue(t)),waiting=active.filter(t=>t.status==="waiting"),done=all.filter(t=>t.status==="completed"),storeProjects=projects.filter(p=>p.store_id===id&&p.status!=="completed");
@@ -832,11 +843,11 @@ async function createTicket(){
 
 // Account administration is authorized again on the server for every request.
 // Passwords and incomplete operations stay in memory only and are cleared on exit.
-let accountManagement={accounts:[],pending:[],resume:null,passwordEditable:false,stores:[],loaded:false,busy:false,error:"",notice:"",view:"list",target:null,requestId:null,payload:null,sequence:0};
+let accountManagement={accounts:[],pending:[],resume:null,passwordEditable:false,stores:[],loaded:false,busy:false,error:"",notice:"",view:"list",target:null,requestId:null,payload:null,storeRequest:null,sequence:0};
 function isAccountAdmin(){return !!session&&profile?.role==="admin"&&profile.active!==false}
 function requireAccountAdmin(){if(!isAccountAdmin())throw new Error("Only an active administrator can manage accounts.")}
 function clearAccountManagement(){
-  accountManagement={accounts:[],pending:[],resume:null,passwordEditable:false,stores:[],loaded:false,busy:false,error:"",notice:"",view:"list",target:null,requestId:null,payload:null,sequence:accountManagement.sequence+1};
+  accountManagement={accounts:[],pending:[],resume:null,passwordEditable:false,stores:[],loaded:false,busy:false,error:"",notice:"",view:"list",target:null,requestId:null,payload:null,storeRequest:null,sequence:accountManagement.sequence+1};
   const password=document.getElementById("accountPassword");if(password)password.value="";
 }
 async function accountAction(action,payload={}){
@@ -855,7 +866,7 @@ async function loadManagedAccounts(){
     const data=await accountAction("list");
     if(epoch!==sessionEpoch||own!==accountManagement||sequence!==own.sequence)return;
     if(!Array.isArray(data?.accounts)||!Array.isArray(data?.stores))throw new Error("The server did not return the account list.");
-    own.accounts=data.accounts;own.pending=Array.isArray(data.pending_requests)?data.pending_requests:[];own.stores=data.stores.filter(s=>s.active!==false);own.loaded=true;
+    own.accounts=data.accounts;own.pending=Array.isArray(data.pending_requests)?data.pending_requests:[];own.stores=data.stores.filter(s=>s.active!==false);stores=own.stores.slice();own.loaded=true;
   }catch(e){if(epoch===sessionEpoch&&own===accountManagement)own.error=e.message}
   finally{if(epoch===sessionEpoch&&own===accountManagement&&sequence===own.sequence){own.busy=false;if(page==="accounts"&&own.view==="list")render()}}
 }
@@ -870,24 +881,25 @@ function accountsPage(){
   if(!isAccountAdmin())return profilePage();
   const state=accountManagement;
   let body='';
-  if(state.view==="create")body=newAccountForm();
+  if(state.view==="create_store")body='<div class="accountIntro"><span class="eyebrow">NEW STORE</span><h2>Add a store</h2><p>Create the store first, then give staff or partners access through their accounts.</p></div>'+newStoreFields()+'<button type="button" class="secondary" onclick="accountBack()">Cancel</button>';
+  else if(state.view==="create")body=newAccountForm();
   else if(state.view==="assign")body=assignAccountForm();
   else if(state.view==="deactivate")body=deactivateAccountForm();
   else{
     const editable=state.accounts.filter(a=>["store","partner"].includes(a.role));
-    body='<div class="accountIntro"><span class="eyebrow">OWNER CONTROLS</span><h2>People & access</h2><p>Give each person their own login and just the stores they need.</p></div><div class="accountSummary"><div><b>'+editable.filter(a=>a.active!==false).length+'</b><span>Active accounts</span></div><div><b>'+editable.filter(a=>a.role==="partner"&&a.active!==false).length+'</b><span>Partners</span></div></div><button id="newAccountButton" type="button" class="primary" '+(!state.loaded||state.busy?'disabled':'')+' onclick="startNewAccount()">+ New account</button><div id="accountListStatus" class="accountStatus" role="status">'+escapeHtml(state.busy?'Loading accounts…':state.error||state.notice)+'</div>'+(state.error?'<button class="secondary" type="button" onclick="loadManagedAccounts()">Retry loading</button>':'')+(state.pending.length?'<div class="sectionTitle"><span>Setup to finish</span></div>'+state.pending.map((p,i)=>'<section class="card accountCard"><span class="pill gold">Incomplete setup</span><h3>'+escapeHtml(p.display_name||p.email)+'</h3><p class="accountEmail">'+escapeHtml(p.email)+'</p><button type="button" class="secondary" onclick="resumeManagedAccount('+i+')">Finish setup</button></section>').join(''):'')+(state.loaded?'<div class="sectionTitle"><span>Accounts</span><button type="button" onclick="loadManagedAccounts()" '+(state.busy?'disabled':'')+'>Refresh</button></div>'+state.accounts.map(accountCard).join(""):'');
+    body='<div class="accountIntro"><span class="eyebrow">OWNER CONTROLS</span><h2>People & access</h2><p>Give each person their own login and just the stores they need.</p></div><div class="accountSummary"><div><b>'+editable.filter(a=>a.active!==false).length+'</b><span>Active accounts</span></div><div><b>'+editable.filter(a=>a.role==="partner"&&a.active!==false).length+'</b><span>Partners</span></div></div><button id="newAccountButton" type="button" class="primary" '+(!state.loaded||state.busy?'disabled':'')+' onclick="startNewAccount()">+ New account</button><button id="newStoreButton" type="button" class="secondary" '+(!state.loaded||state.busy?'disabled':'')+' onclick="startNewStore()">+ New store</button><div id="accountListStatus" class="accountStatus" role="status">'+escapeHtml(state.busy?'Loading accounts…':state.error||state.notice)+'</div>'+(state.error?'<button class="secondary" type="button" onclick="loadManagedAccounts()">Retry loading</button>':'')+(state.pending.length?'<div class="sectionTitle"><span>Setup to finish</span></div>'+state.pending.map((p,i)=>'<section class="card accountCard"><span class="pill gold">Incomplete setup</span><h3>'+escapeHtml(p.display_name||p.email)+'</h3><p class="accountEmail">'+escapeHtml(p.email)+'</p><button type="button" class="secondary" onclick="resumeManagedAccount('+i+')">Finish setup</button></section>').join(''):'')+(state.loaded?'<div class="sectionTitle"><span>Accounts</span><button type="button" onclick="loadManagedAccounts()" '+(state.busy?'disabled':'')+'>Refresh</button></div>'+state.accounts.map(accountCard).join(""):'');
   }
   return '<div class="screen"><div class="pageHead"><h1>Account management</h1><button type="button" aria-label="Back" onclick="accountBack()">‹</button></div><main class="content accountContent">'+body+'</main></div>';
 }
 function accountBack(){
   if(accountManagement.view!=="list"){
-    accountManagement.sequence++;accountManagement.view="list";accountManagement.target=null;accountManagement.payload=null;accountManagement.requestId=null;accountManagement.resume=null;accountManagement.passwordEditable=false;accountManagement.busy=false;accountManagement.error="";render();loadManagedAccounts();
+    accountManagement.sequence++;accountManagement.storeRequest=null;accountManagement.view="list";accountManagement.target=null;accountManagement.payload=null;accountManagement.requestId=null;accountManagement.resume=null;accountManagement.passwordEditable=false;accountManagement.busy=false;accountManagement.error="";render();loadManagedAccounts();
   }else go("profile");
 }
 function startNewAccount(){
   try{requireAccountAdmin()}catch(e){toast(e.message);return}
   if(accountManagement.busy||!accountManagement.loaded)return;
-  accountManagement.view="create";accountManagement.resume=null;accountManagement.passwordEditable=false;accountManagement.requestId=crypto.randomUUID();accountManagement.payload=null;accountManagement.error="";render();document.getElementById("accountName")?.focus();
+  accountManagement.view="create";accountManagement.storeRequest=null;accountManagement.resume=null;accountManagement.passwordEditable=false;accountManagement.requestId=crypto.randomUUID();accountManagement.payload=null;accountManagement.error="";render();document.getElementById("accountName")?.focus();
 }
 function storeAssignmentInputs(role,selected=[]){
   return accountManagement.stores.map((s,i)=>'<label class="accountStoreChoice"><input type="'+(role==="store"?'radio':'checkbox')+'" name="accountStores" id="accountStore'+i+'" value="'+escapeHtml(s.id)+'" '+(selected.includes(s.id)?'checked':'')+'><span>'+escapeHtml(s.name)+'<small>'+escapeHtml(s.code)+'</small></span></label>').join("")||'<p>No active stores are available.</p>';
@@ -905,7 +917,71 @@ function lockAccountCreateFields(passwordEditable){
 }
 function newAccountForm(){
   const resuming=!!accountManagement.resume;
-  return '<div class="accountIntro"><span class="eyebrow">NEW ACCOUNT</span><h2>'+ (resuming?'Finish account setup':'One person. Their stores.')+'</h2><p>'+(resuming?'Retry the original account request. If its sign-in was already created, the previously entered password stays unchanged.':'Staff can report issues for one store. Partners can view and follow up across the stores you choose.')+'</p></div><form id="accountCreateForm" class="form" onsubmit="event.preventDefault();createManagedAccount()"><fieldset id="accountFields"><label for="accountName">Full name</label><input id="accountName" autocomplete="off" maxlength="100" required><label for="accountEmail">Email address</label><input id="accountEmail" type="email" autocomplete="off" maxlength="254" required><label for="accountRole">Account type</label><select id="accountRole" onchange="changeAccountRole()"><option value="store">Store staff · one store</option><option value="partner">Partner · selected stores</option></select><label>Assigned stores</label><div id="accountStoreChoices">'+storeAssignmentInputs("store")+'</div><label for="accountPassword">Initial password</label><input id="accountPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required><p class="accountHint">Use at least 12 characters, up to 72 UTF-8 bytes. Non-English characters can count as several bytes. Share it privately with this person. The password is never displayed in the account list.</p></fieldset><div id="accountActionStatus" class="accountStatus" role="status"></div><button id="accountSubmit" type="submit" class="primary">Create account</button><button type="button" class="secondary" onclick="accountBack()">Cancel</button></form>';
+  return '<div class="accountIntro"><span class="eyebrow">NEW ACCOUNT</span><h2>'+ (resuming?'Finish account setup':'One person. Their stores.')+'</h2><p>'+(resuming?'Retry the original account request. If its sign-in was already created, the previously entered password stays unchanged.':'Staff can report issues for one store. Partners can view and follow up across the stores you choose.')+'</p></div><form id="accountCreateForm" class="form" onsubmit="event.preventDefault();createManagedAccount()"><fieldset id="accountFields"><label for="accountName">Full name</label><input id="accountName" autocomplete="off" maxlength="100" required><label for="accountEmail">Email address</label><input id="accountEmail" type="email" autocomplete="off" maxlength="254" required><label for="accountRole">Account type</label><select id="accountRole" onchange="changeAccountRole()"><option value="store">Store staff · one store</option><option value="partner">Partner · selected stores</option></select><label>Assigned stores</label><div id="accountStoreChoices">'+storeAssignmentInputs("store")+'</div>'+(!resuming?'<button id="inlineNewStoreButton" type="button" class="secondary" onclick="startNewStore(true)">+ New store</button>':'')+'<label for="accountPassword">Initial password</label><input id="accountPassword" type="password" autocomplete="new-password" minlength="12" maxlength="72" required><p class="accountHint">Use at least 12 characters, up to 72 UTF-8 bytes. Non-English characters can count as several bytes. Share it privately with this person. The password is never displayed in the account list.</p></fieldset>'+(!resuming?'<section id="inlineStorePanel" class="card accountCard hidden" aria-label="Create a new store">'+newStoreFields()+'<button type="button" class="secondary" onclick="cancelInlineStore()">Cancel new store</button></section>':'')+'<div id="accountActionStatus" class="accountStatus" role="status"></div><button id="accountSubmit" type="submit" class="primary">Create account</button><button type="button" class="secondary" onclick="accountBack()">Cancel</button></form>';
+}
+function newStoreFields(){
+  return '<div class="form" onkeydown="if(event.key===&quot;Enter&quot;){event.preventDefault();createManagedStore()}"><fieldset id="newStoreFields"><label for="newStoreName">Store name</label><input id="newStoreName" autocomplete="off" maxlength="100" placeholder="Enter the store name"><label for="newStoreCode">Short code</label><input id="newStoreCode" autocomplete="off" autocapitalize="characters" maxlength="8" placeholder="2–8 letters or numbers"><p class="accountHint">Use a unique code with 2–8 letters or numbers. No login or store access is created until you assign an account.</p></fieldset><div id="newStoreStatus" class="accountStatus" role="status"></div><button id="createStoreSubmit" type="button" class="primary" onclick="createManagedStore()">Create store</button></div>';
+}
+function startNewStore(inline=false){
+  try{requireAccountAdmin()}catch(e){toast(e.message);return}
+  const state=accountManagement;
+  if(state.busy||!state.loaded||state.payload||state.resume)return;
+  if(inline&&state.view!=="create"||!inline&&state.view!=="list")return;
+  state.storeRequest=null;
+  if(inline){document.getElementById("inlineStorePanel").classList.remove("hidden");document.getElementById("inlineNewStoreButton").disabled=true;document.getElementById("accountSubmit").disabled=true}
+  else{state.view="create_store";render()}
+  document.getElementById("newStoreName")?.focus();
+}
+function cancelInlineStore(){
+  const state=accountManagement;
+  if(state.view!=="create")return;
+  state.sequence++;state.storeRequest=null;state.busy=false;
+  document.getElementById("inlineStorePanel").classList.add("hidden");
+  document.getElementById("newStoreName").value="";document.getElementById("newStoreCode").value="";
+  document.getElementById("newStoreStatus").textContent="";
+  document.getElementById("newStoreFields").disabled=false;document.getElementById("createStoreSubmit").disabled=false;
+  document.getElementById("accountFields").disabled=false;document.getElementById("inlineNewStoreButton").disabled=false;document.getElementById("accountSubmit").disabled=false;
+}
+async function createManagedStore(){
+  const own=accountManagement,epoch=sessionEpoch,view=own.view;
+  if(own.busy||!["create","create_store"].includes(view)||view==="create"&&document.getElementById("inlineStorePanel")?.classList.contains("hidden"))return;
+  const status=document.getElementById("newStoreStatus"),fields=document.getElementById("newStoreFields"),submit=document.getElementById("createStoreSubmit");
+  try{
+    requireAccountAdmin();
+    if(!own.storeRequest){
+      const name=document.getElementById("newStoreName").value.trim(),code=document.getElementById("newStoreCode").value.trim().toUpperCase();
+      if(!name||[...name].length>100)throw new Error("Enter a store name of 1–100 characters.");
+      if(!/^[A-Z0-9]{2,8}$/.test(code))throw new Error("Use 2–8 letters or numbers for the short code.");
+      if(own.stores.some(s=>s.code.toUpperCase()===code))throw new Error("That short code is already in use. Choose another code.");
+      own.storeRequest={requestId:crypto.randomUUID(),name,code};
+    }
+  }catch(e){if(status)status.textContent=e.message;return}
+  const sequence=++own.sequence,payload=own.storeRequest;own.busy=true;
+  status.textContent="Creating store…";fields.disabled=true;submit.disabled=true;
+  const accountFields=document.getElementById("accountFields");if(accountFields)accountFields.disabled=true;
+  try{
+    const result=await accountAction("create_store",payload);
+    if(epoch!==sessionEpoch||own!==accountManagement||sequence!==own.sequence||view!==own.view)return;
+    const store=result?.store;
+    if(result?.ok!==true||result.request_id!==payload.requestId||!store||typeof store.id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(store.id)||typeof store.name!=="string"||typeof store.code!=="string"||typeof store.active!=="boolean")throw new Error("The server did not confirm the new store.");
+    const changed=store.name!==payload.name||store.code!==payload.code,selectNew=store.active&&!changed;
+    const notice=!store.active?"This store request was completed, but the store is now inactive. Choose an active store.":changed?"This store request was completed, but its details have changed. Review the available stores before assigning access.":store.name+" created.";
+    own.stores=own.stores.filter(s=>s.id!==store.id).concat(store.active?[store]:[]).sort((a,b)=>a.code.localeCompare(b.code));
+    stores=stores.filter(s=>s.id!==store.id).concat(store.active?[store]:[]);
+    own.storeRequest=null;own.busy=false;
+    if(view==="create"){
+      const role=document.getElementById("accountRole").value,selected=selectedAccountStores();
+      document.getElementById("accountStoreChoices").innerHTML=storeAssignmentInputs(role,selectNew?(role==="store"?[store.id]:[...new Set([...selected,store.id])]):selected);
+      cancelInlineStore();document.getElementById("accountActionStatus").textContent=selectNew?store.name+" created and selected. Finish creating this account to grant access.":notice;
+    }else{own.notice=notice+(selectNew?" Create an account or assign it to an existing account.":"");own.view="list";render();await loadManagedAccounts()}
+  }catch(e){
+    if(epoch!==sessionEpoch||own!==accountManagement||sequence!==own.sequence||view!==own.view)return;
+    if(["store_code_exists","invalid_store_code","invalid_store_name","invalid_request_id"].includes(e.code)){
+      own.storeRequest=null;status.textContent=e.code==="store_code_exists"?"That short code is already in use. Choose another code.":"Check the store name and short code, then try again.";
+    }else status.textContent="Creation not confirmed. Retry checks the same store request. You can also cancel and refresh the store list before starting again.";
+  }finally{
+    if(epoch===sessionEpoch&&own===accountManagement&&sequence===own.sequence&&view===own.view){own.busy=false;if(submit.isConnected)submit.disabled=false;if(fields.isConnected)fields.disabled=!!own.storeRequest;if(accountFields?.isConnected)accountFields.disabled=false;if(view==="create")document.getElementById("inlineNewStoreButton").disabled=true}
+  }
 }
 function changeAccountRole(){
   if(accountManagement.payload||accountManagement.resume)return;
@@ -919,7 +995,7 @@ function validateAccountStores(role,ids){
   if(ids.some(id=>!accountManagement.stores.some(s=>s.id===id)))throw new Error("Choose an available store.");
 }
 async function createManagedAccount(){
-  const state=accountManagement;if(state.busy||state.view!=="create")return;
+  const state=accountManagement;if(state.busy||state.view!=="create"||document.getElementById("inlineStorePanel")&&!document.getElementById("inlineStorePanel").classList.contains("hidden"))return;
   try{
     requireAccountAdmin();
     if(state.payload&&state.passwordEditable){const password=document.getElementById("accountPassword").value;if([...password].length<12||new Blob([password]).size>72)throw new Error("Use at least 12 characters and no more than 72 UTF-8 bytes.");state.payload.password=password;state.passwordEditable=false}

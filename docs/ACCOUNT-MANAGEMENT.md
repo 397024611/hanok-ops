@@ -1,14 +1,15 @@
-# Report Boss account management 0.9.0 candidate
+# Report Boss account and store management 0.9.1 candidate
 
 ## Feature scope
 
 The Android app's Profile has an **Account management** entry visible only to an active administrator. It lists active/inactive accounts, account type, and assigned stores. Administrators can:
 
-1. Create an independent store-staff or partner account with a name, email, initial password, and permitted stores.
-2. Change a staff account's single store or a partner's selected stores.
-3. Confirm deactivation, immediately blocking new operational requests made with existing JWTs while retaining reports/comments/history.
+1. Create a store using its name and a unique 2–8 character alphanumeric short code. This creates no login or account access.
+2. Create an independent store-staff or partner account with a name, email, initial password, and permitted stores.
+3. Change a staff account's single store or a partner's selected stores.
+4. Confirm deactivation, immediately blocking new operational requests made with existing JWTs while retaining reports/comments/history.
 
-A staff account uses one store and can submit, comment, upload photos, and request reopening. A partner can view assigned-store issues, comment, and attach photos. Partners cannot create tickets, change workflow state, review reopening, approve expenses, or manage accounts. The owner and existing HQ role keep existing group-wide operations. Creating HQ/admin accounts, changing role, resetting personal passwords, reactivating accounts, and creating stores are intentionally outside this version.
+A staff account uses one store and can submit, comment, upload photos, and request reopening. A partner can view assigned-store issues, comment, and attach photos. Partners cannot create tickets, change workflow state, review reopening, approve expenses, or manage accounts. The owner and existing HQ role keep existing group-wide operations. Creating HQ/admin accounts, changing role, resetting personal passwords, and reactivating accounts are intentionally outside this version.
 
 The store web portal includes **Individual account** email login and the existing **Shared store login** option. Partners can switch between only their assigned stores. Membership changes invalidate in-flight reads/writes and clear old tickets, comments, forms, and object URLs before showing a new store. Periodic access checks clear signed-in disabled users' UI; database policies block the next request immediately.
 
@@ -24,7 +25,7 @@ The store web portal includes **Individual account** email login and the existin
 
 ## Compatibility
 
-The development tree starts from PR #2 head `189da2079856ff6e0e95de22597ef547ce1c78c8`. It retains the Android `ACCESS_NETWORK_STATE` permission, safe notification-scheduling failure handling, and approved release certificate verification. Java source, manifest, and certificate verifier are unchanged by this feature. Version metadata is advanced together to 0.9.0 / code 13, keeping `com.hanokgroup.ops`.
+The development tree starts from released main commit `691bad709420a5c97672d859b4284c1886edfe70`. It retains the Android `ACCESS_NETWORK_STATE` permission, safe notification-scheduling failure handling, and approved release certificate verification. Java source, manifest, and certificate verifier are unchanged by this feature. Version metadata is advanced together to 0.9.1 / code 14, keeping `com.hanokgroup.ops`.
 
 The five preexisting shared store logins are backfilled into the new membership model and cannot be rebound to another store. The old administrator webpage retains password reset for an existing active shared login only; independent account creation happens in the app. The hardened legacy function never reactivates a disabled login.
 
@@ -40,8 +41,16 @@ Do not deploy this candidate yet. Before provisioning accounts in any target pro
 
 1. Complete an explicitly authorized read-only target inventory and compare actual schema, permissions, triggers, and storage ownership behavior with migration assumptions. Verify that a newly provisioned operational identity cannot gain access to the other application.
 2. Run real isolated Supabase integration tests and advisors, browser suites, and normal Android Gradle compilation/lint. Review any externally issued signed-file links and service-role APIs.
-3. Keep this feature isolated from PR #2 while it is under review. Do not merge or deploy as a side effect of CI.
-4. Obtain action-time approval for the production authorization migration and related function deployment. Apply the reviewed migration and both function versions together, retaining gateway JWT verification. Publish frontend only after backend compatibility is confirmed.
+3. Keep the new-store candidate in its review branch until approved. Do not merge or deploy as a side effect of CI.
+4. Obtain action-time approval for the production authorization migration and related function deployment. Apply the reviewed additive new-store migration, then update only `ops-admin-accounts`, retaining gateway JWT verification. Keep the legacy shared-password function unchanged. Publish frontend only after backend compatibility is confirmed.
 5. Perform explicitly approved smoke tests with isolated test identities, including legacy logins, membership removal and already-signed-in deactivation. Build the signed APK with the existing approved signing identity, verify it, and test installation before distribution.
 
 The validation workflows do not connect to production or deploy this candidate.
+
+## New-store flow
+
+Both the account list and the new-account form have **+ New store**. The inline form retains the account draft and selects the new store after successful creation. Store names are trimmed; codes are trimmed and uppercased. Duplicate codes are rejected, including codes belonging to inactive stores. Cancel and Back do not delete an already completed store creation. After an uncertain response, Retry uses the same immutable request, and cancelling allows a list refresh before creating again.
+
+The 0.9.1 candidate starts from the exact tree of released commit `691bad709420a5c97672d859b4284c1886edfe70` (`a57b31dd358e08cceee9bc7c3fbaf832f11a7ad2`). It does not alter existing memberships, accounts, shared logins, or reports. New store creation does not send invitations or create passwords. Store deletion remains unsupported.
+
+Publishing requires review and fresh action-time approval of the new authorization migration and endpoint update. Apply the reviewed additive migration before updating `ops-admin-accounts`; keep JWT verification enabled. The existing endpoint actions and employee portal URL remain compatible. Validate non-mutating production checks and preserved counts after deployment. Do not create placeholder stores in production; the owner supplies the real name/code in the app.

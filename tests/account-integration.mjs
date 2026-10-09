@@ -268,6 +268,112 @@ async function run() {
     }
     pass('staff/partner creation, real password login, idempotency, and server-owned authorization');
 
+    stage = 'admin-only store creation and replay';
+    const otherAdmin = await authFixture('Other store administrator');
+    const inactiveAdmin = await authFixture('Inactive store administrator');
+    await sql(`update public.ops_profiles set role='admin',active=true where user_id=${sqlString(otherAdmin.id)};
+      update public.ops_profiles set role='admin',active=false where user_id=${sqlString(inactiveAdmin.id)};`);
+    otherAdmin.token = await login(otherAdmin); inactiveAdmin.token = await login(inactiveAdmin);
+    const storeRequest = { action: 'create_store', requestId: randomUUID(), name: '  新门店 😀  ', code: ' nw01 ' };
+    const expectStoreError = (result, statusCode, error, label) => {
+      const data = expect(result, statusCode, label); check(data?.error === error, `${label}: incorrect safe error`); return data;
+    };
+    for (const user of [hq, pending, staff, partner, inactiveAdmin, ...shared]) {
+      expectStoreError(await accounts({ ...storeRequest, actorId: admin.id }, user.token), 403, 'admin_required', 'Only active admin can create store');
+    }
+    expect(await request('/functions/v1/ops-admin-accounts', { method: 'POST', body: storeRequest, noAuth: true }), 401, 'Store creation requires bearer');
+    const storeRPC = { p_actor_id: admin.id, p_request_id: storeRequest.requestId, p_name: storeRequest.name, p_code: storeRequest.code };
+    for (const token of [undefined, admin.token, hq.token, staff.token, partner.token]) {
+      deniedInsert(await request('/rest/v1/rpc/ops_admin_stores_create', { method: 'POST', token, body: storeRPC }), 'Ordinary clients cannot call store RPC');
+    }
+    for (const [change, error] of [
+      [{ requestId: 'not-a-uuid' }, 'invalid_request_id'], [{ name: '\t\u3000' }, 'invalid_store_name'],
+      [{ name: '😀'.repeat(101) }, 'invalid_store_name'], [{ code: 'A-B' }, 'invalid_store_code'], [{ code: 'TOOLONG99' }, 'invalid_store_code'],
+    ]) expectStoreError(await accounts({ ...storeRequest, ...change }, admin.token), 400, error, 'Store field validation');
+    expectStoreError(await accounts({ ...storeRequest, code: stores[0].code }, admin.token), 409, 'store_code_exists', 'Existing store code cannot be reused');
+    check((await sql('select count(*) from ops_private.store_create_requests;')).trim() === '0', 'Rejected creation consumed a request');
+    const protectedTables = ['ops_profiles', 'ops_store_memberships', 'ops_tickets', 'ops_ticket_comments', 'ops_ticket_attachments',
+      'ops_ticket_events', 'ops_reopen_requests', 'ops_notifications', 'ops_push_subscriptions'];
+    const storeSnapshot = () => sql(`select jsonb_build_object(
+      'stores',(select jsonb_agg(to_jsonb(s) order by s.id) from public.ops_stores s where id in (${stores.map(s => sqlString(s.id)).join(',')})),
+      'auth',(select jsonb_agg(jsonb_build_object('id',id,'email',email,'app_metadata',raw_app_meta_data,'user_metadata',raw_user_meta_data) order by id) from auth.users),
+      'account_requests',(select coalesce(jsonb_agg(to_jsonb(r) order by r.request_id),'[]'::jsonb) from ops_private.account_create_requests r),
+      'storage',(select coalesce(jsonb_agg(to_jsonb(o) order by o.id),'[]'::jsonb) from storage.objects o),
+      ${protectedTables.map(table => `${sqlString(table)},(select coalesce(jsonb_agg(to_jsonb(t) order by to_jsonb(t)::text),'[]'::jsonb) from public.${table} t)`).join(',')}
+    );`);
+    const beforeStoreCreation = await storeSnapshot();
+    const concurrent = await Promise.all(Array.from({ length: 6 }, () => accounts(storeRequest, admin.token)));
+    const newStore = expect(concurrent[0], 200, 'Concurrent store creation').store;
+    check(newStore?.id && newStore.name === '新门店 😀' && newStore.code === 'NW01' && newStore.active === true, 'Created store not normalized');
+    for (const result of concurrent) {
+      const data = expect(result, 200, 'Same request concurrent retry');
+      check(data.ok && data.request_id === storeRequest.requestId && data.store.id === newStore.id, 'Concurrent request duplicated store or lost request correlation');
+      check(result.headers.get('cache-control') === 'no-store', 'Store creation response was cacheable');
+    }
+    check((await sql("select count(*) from public.ops_stores where code='NW01';")).trim() === '1', 'Concurrent request duplicated code');
+    check((await sql(`select count(*) from ops_private.store_create_requests where request_id=${sqlString(storeRequest.requestId)};`)).trim() === '1', 'Concurrent request duplicated replay record');
+    check(await storeSnapshot() === beforeStoreCreation, 'Store creation changed existing data, Auth identities or assignments');
+    check((await sql(`select count(*) from public.ops_store_memberships where store_id=${sqlString(newStore.id)};`)).trim() === '0', 'Store creation assigned an account automatically');
+    const replay = expect(await accounts({ ...storeRequest, name: '新门店 😀', code: 'NW01' }, admin.token), 200, 'Normalized store replay');
+    check(replay.store.id === newStore.id, 'Normalized replay changed store identity');
+    const serviceReplay = expect(await request('/rest/v1/rpc/ops_admin_stores_create', { service: true, method: 'POST', body: storeRPC }), 200, 'Service-role store RPC');
+    check(serviceReplay.id === newStore.id, 'Service replay changed identity');
+    for (const change of [{ name: 'Different store' }, { code: 'NW02' }]) {
+      expectStoreError(await accounts({ ...storeRequest, ...change }, admin.token), 409, 'request_conflict', 'Changed store replay is a conflict');
+    }
+    expectStoreError(await accounts(storeRequest, otherAdmin.token), 409, 'request_conflict', 'Cross-actor replay is a conflict');
+    expectStoreError(await accounts({ ...storeRequest, requestId: randomUUID() }, admin.token), 409, 'store_code_exists', 'New request cannot adopt existing code');
+    const duplicateRequests = [0, 1].map(i => ({ action: 'create_store', requestId: randomUUID(), name: `Code race ${i}`, code: 'RACE' }));
+    const duplicateResults = await Promise.all(duplicateRequests.map(body => accounts(body, admin.token)));
+    check(JSON.stringify(duplicateResults.map(r => r.status).sort()) === '[200,409]', 'Same-code concurrency did not have exactly one winner');
+    expectStoreError(duplicateResults.find(r => r.status === 409), 409, 'store_code_exists', 'Concurrent duplicate code');
+    check((await sql("select count(*) from public.ops_stores where code='RACE';")).trim() === '1', 'Same-code concurrency created duplicate rows');
+    const conflictRequestId = randomUUID();
+    const conflictResults = await Promise.all(['CF01', 'CF02'].map(code => accounts({ action: 'create_store', requestId: conflictRequestId, name: code, code }, admin.token)));
+    check(JSON.stringify(conflictResults.map(r => r.status).sort()) === '[200,409]', 'Conflicting request did not have exactly one winner');
+    expectStoreError(conflictResults.find(r => r.status === 409), 409, 'request_conflict', 'Concurrent conflicting request');
+    check((await sql("select count(*) from public.ops_stores where code in ('CF01','CF02');")).trim() === '1', 'Conflicting replay left an extra store');
+    await sql(`update public.ops_stores set active=false where id=${sqlString(newStore.id)};`);
+    const inactiveReplay = expect(await accounts(storeRequest, admin.token), 200, 'Inactive store replay');
+    check(inactiveReplay.store.id === newStore.id && inactiveReplay.store.active === false, 'Replay reactivated store');
+    expectStoreError(await accounts({ ...storeRequest, requestId: randomUUID() }, admin.token), 409, 'store_code_exists', 'Inactive store code remains reserved');
+    await sql(`update public.ops_stores set active=true where id=${sqlString(newStore.id)};`);
+    await sql(`update public.ops_stores set name='Renamed store',code='RENAME' where id=${sqlString(newStore.id)};`);
+    const renamedReplay = expect(await accounts(storeRequest, admin.token), 200, 'Renamed store replay');
+    check(renamedReplay.request_id === storeRequest.requestId && renamedReplay.store.id === newStore.id
+      && renamedReplay.store.name === 'Renamed store' && renamedReplay.store.code === 'RENAME', 'Replay lost renamed store identity');
+    await sql(`update public.ops_stores set name=${sqlString(newStore.name)},code=${sqlString(newStore.code)} where id=${sqlString(newStore.id)};`);
+    const storeList = expect(await accounts({ action: 'list' }, admin.token), 200, 'Created store in administration list');
+    check(storeList.stores.some(s => s.id === newStore.id), 'Created store absent from administration list');
+    pass('real store creation: active-admin gate, direct RPC denial, Unicode validation, atomic concurrent replay/conflicts, no account or history changes');
+
+    stage = 'new store isolation';
+    const newTicket = expect(await insert('ops_tickets', { store_id: newStore.id, created_by: admin.id, title: 'Private new store issue', status: 'completed', resolution: 'Local fixture' }, admin.token), 201, 'New store ticket fixture')[0];
+    const newPhoto = `${newTicket.id}/new-store.png`;
+    expect(await insert('ops_ticket_comments', { ticket_id: newTicket.id, author_id: admin.id, body: 'Private new store comment' }, admin.token), 201, 'New store comment fixture');
+    expect(await upload(newPhoto, admin.token), 200, 'New store photo fixture');
+    expect(await insert('ops_ticket_attachments', { ticket_id: newTicket.id, uploaded_by: admin.id, storage_path: newPhoto, file_name: 'new-store.png', mime_type: 'image/png', size_bytes: PNG.length }, admin.token), 201, 'New store attachment fixture');
+    for (const user of [staff, partner, ...shared]) {
+      check(rows(await read('ops_stores', user.token, `id=eq.${newStore.id}`), 'Scoped new store read').length === 0, 'Existing account acquired new store');
+      for (const table of ['ops_tickets', 'ops_ticket_comments', 'ops_ticket_attachments', 'ops_ticket_events', 'ops_reopen_requests']) {
+        const filter = table === 'ops_tickets' ? `id=eq.${newTicket.id}` : `ticket_id=eq.${newTicket.id}`;
+        check(rows(await read(table, user.token, filter), 'Scoped new store history').length === 0, 'Existing scoped account saw new store data');
+      }
+      deniedInsert(await insert('ops_tickets', { store_id: newStore.id, created_by: user.id, title: 'Forbidden new store ticket' }, user.token), 'No automatic new store ticket access');
+      deniedInsert(await insert('ops_ticket_comments', { ticket_id: newTicket.id, author_id: user.id, body: 'Forbidden new store comment' }, user.token), 'No automatic new store comment access');
+      deniedInsert(await insert('ops_reopen_requests', { ticket_id: newTicket.id, store_id: newStore.id, requested_by: user.id, reason: 'Forbidden new store reopen' }, user.token), 'No automatic new store reopen access');
+      deniedStorage(await download(newPhoto, user.token), 'No automatic new store download access');
+      deniedStorage(await upload(`${newTicket.id}/${randomUUID()}.png`, user.token), 'No automatic new store upload access');
+    }
+    for (const user of [admin, hq]) {
+      check(rows(await read('ops_stores', user.token, `id=eq.${newStore.id}`), 'Group-wide new store access').length === 1, 'Group-wide store scope changed');
+      expect(await download(newPhoto, user.token), 200, 'Group-wide new store photo access');
+    }
+    check(rows(await read('ops_stores', partner.token), 'Partner original stores retained').length === 2, 'Partner original assignments changed');
+    check(rows(await read('ops_stores', staff.token), 'Staff original store retained').length === 1, 'Staff original assignment changed');
+    for (const user of shared) check(rows(await read('ops_stores', user.token), 'Shared original store retained').length === 1, 'Shared original binding changed');
+    pass('new store remains isolated from existing partner, staff and five shared logins; HQ/admin group-wide access preserved');
+
     stage = 'store scope and operations';
     const inTicket = shared[0].ticket, outTicket = shared[2].ticket;
     check(rows(await read('ops_tickets', partner.token), 'Partner initial tickets').length === 2, 'Partner multi-store scope incorrect');
@@ -365,6 +471,8 @@ async function run() {
     check(fixedProfile.user_id === fixed.id && fixedProfile.store_id === fixed.store.id && fixedProfile.active === false && fixedProfile.is_legacy_shared, 'Legacy reset changed disabled identity');
     await sql(`update public.ops_profiles set active=false where user_id in (${sqlString(admin.id)},${sqlString(hq.id)});`);
     expect(await accounts({ action: 'list' }, admin.token), 403, 'Inactive admin account endpoint');
+    expectStoreError(await accounts({ action: 'create_store', requestId: randomUUID(), name: 'Inactive admin denied', code: 'NO99' }, admin.token), 403, 'admin_required', 'Inactive admin store endpoint');
+    expect(await request('/rest/v1/rpc/ops_admin_stores_create', { service: true, method: 'POST', body: { p_actor_id: admin.id, p_request_id: randomUUID(), p_name: 'Inactive admin denied', p_code: 'NO99' } }), 403, 'Store RPC rechecks live actor');
     expect(await legacyReset(stores[1].code, password(), admin.token), 403, 'Inactive admin legacy endpoint');
     expect(await request('/rest/v1/rpc/ops_review_reopen_request', { token: hq.token, method: 'POST', body: { p_request_id: reopen.id, p_approve: true } }), 400, 'Inactive HQ review RPC');
     check(rows(await read('ops_tickets', admin.token), 'Inactive admin tickets').length === 0, 'Inactive admin retained data access');

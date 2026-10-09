@@ -50,6 +50,10 @@ async function fixture() {
   await db.exec('create policy broad_legacy_storage_delete on storage.objects for delete to authenticated using(true);');
   const migration=fs.readdirSync(path.join(root,'supabase/migrations')).find(x=>x.endsWith('_account_memberships_and_active_access.sql'));
   await db.exec(fs.readFileSync(path.join(root,'supabase/migrations',migration),'utf8'));
+  // Run established account/legacy access regression against every later migration too.
+  for (const next of fs.readdirSync(path.join(root,'supabase/migrations')).filter(x=>x.endsWith('.sql')&&x>migration).sort()) {
+    await db.exec(fs.readFileSync(path.join(root,'supabase/migrations',next),'utf8'));
+  }
   async function as(id,sql,params=[],role='authenticated') {
     await db.exec(`set role ${role};`);
     try { await db.query("select set_config('request.jwt.claim.sub',$1,false)",[id||'']); return await db.query(sql,params); }

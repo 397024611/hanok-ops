@@ -142,3 +142,68 @@ test('password byte limits accept valid multibyte values and reject provider-inc
   const h=await legacyHarness({password});assert.equal(h.result.status,400);assert.equal(h.body.error,'invalid_password');assert.equal(h.resets.length,0);
  }
 });
+
+const storeBody=()=>({action:'create_store',requestId:id(700),name:'  新店 😀  ',code:' nw01 '});
+const sampleStore={id:id(701),name:'新店 😀',code:'NW01',active:true};
+test('store creation verifies JWT and live administrator role before any mutation',async()=>{
+ for(const profile of [null,{role:'hq',active:true},{role:'store',active:true},{role:'partner',active:true},{role:'pending',active:true},{role:'admin',active:false}]) {
+  const h=await harness({profile});const result=await h.send(storeBody());assert.equal(result.status,403);assert.equal(result.body.error,'admin_required');
+  assert.equal(h.calls.some(c=>c[0]==='rpc'||c[0]==='createUser'),false);
+ }
+ for(const identity of [{data:{user:null},error:{message:'Invalid token'}},{data:{user:null},error:null}]) {
+  const h=await harness({identity});assert.equal((await h.send(storeBody())).status,401);assert.equal(h.calls.some(c=>c[0]==='rpc'),false);
+ }
+ const noAuth=await harness();assert.equal((await noAuth.send(storeBody(),{headers:{'Content-Type':'application/json'}})).status,401);
+ assert.equal(noAuth.calls.length,0);
+ const unavailable=await harness({profileError:{message:'Database down'}});assert.equal((await unavailable.send(storeBody())).status,503);
+ assert.equal(unavailable.calls.some(c=>c[0]==='rpc'),false);
+});
+test('store creation normalizes names/codes and uses only the verified actor and atomic store RPC',async()=>{
+ const h=await harness({rpc:async()=>({data:sampleStore,error:null})});
+ const result=await h.send({...storeBody(),actorId:id(999),active:false,storeIds:[id(20)],role:'admin',email:'unrequested@example.test',password:fakePassword});
+ assert.equal(result.status,200);assert.deepEqual(result.body,{ok:true,request_id:id(700),store:sampleStore});assert.equal(result.headers.get('cache-control'),'no-store');
+ assert.deepEqual(h.calls.filter(c=>c[0]==='rpc'),[['rpc','ops_admin_stores_create',{p_actor_id:id(1),p_request_id:id(700),p_name:'新店 😀',p_code:'NW01'}]]);
+ assert.equal(h.calls.some(c=>c[0]==='createUser'),false);
+ assert.deepEqual(h.calls.filter(c=>c[0]==='from'),[['from','ops_profiles']]);
+});
+test('store creation rejects invalid Unicode names, codes and request IDs without mutation',async()=>{
+ const invalid=[
+  [{requestId:null},'invalid_request_id'],[{requestId:'not-a-uuid'},'invalid_request_id'],
+  [{name:null},'invalid_store_name'],[{name:123},'invalid_store_name'],[{name:''},'invalid_store_name'],[{name:' \t\n\u00a0\u3000 '},'invalid_store_name'],
+  [{name:'店'.repeat(101)},'invalid_store_name'],[{name:'😀'.repeat(101)},'invalid_store_name'],[{name:'Null\u0000name'},'invalid_store_name'],[{name:'\ud800'},'invalid_store_name'],
+  [{code:null},'invalid_store_code'],[{code:123},'invalid_store_code'],[{code:'A'},'invalid_store_code'],[{code:'ABCDEFGHI'},'invalid_store_code'],
+  [{code:'AB-CD'},'invalid_store_code'],[{code:'AB CD'},'invalid_store_code'],[{code:'中文'},'invalid_store_code'],[{code:'ß1'},'invalid_store_code'],
+ ];
+ for(const [change,error] of invalid) {
+  const h=await harness();const result=await h.send({...storeBody(),...change});assert.equal(result.status,400,JSON.stringify(change));assert.equal(result.body.error,error);
+  assert.equal(h.calls.some(c=>c[0]==='rpc'||c[0]==='createUser'),false);
+ }
+});
+test('store creation counts Unicode code points, supports trimmed limits, and accepts ASCII codes',async()=>{
+ for(const name of ['店','店'.repeat(100),'😀'.repeat(100),'\t\n\u00a0\u3000Name\uFEFF']) {
+  const h=await harness({rpc:async()=>({data:sampleStore,error:null})});assert.equal((await h.send({...storeBody(),name})).status,200);
+  assert.equal(h.calls.find(c=>c[0]==='rpc')[2].p_name,name.trim());
+ }
+ for(const code of ['aa','12345678','\t ab12 \u3000']) {
+  const h=await harness({rpc:async()=>({data:sampleStore,error:null})});assert.equal((await h.send({...storeBody(),code})).status,200);
+  assert.equal(h.calls.find(c=>c[0]==='rpc')[2].p_code,code.trim().toUpperCase());
+ }
+});
+test('store creation maps database authorization/validation/conflict errors without exposing raw errors',async()=>{
+ for(const [error,status] of [['admin_required',403],['invalid_request_id',400],['invalid_store_name',400],['invalid_store_code',400],['store_code_exists',409],['request_conflict',409]]) {
+  const h=await harness({rpc:async()=>({data:null,error:{message:error}})});const result=await h.send(storeBody());
+  assert.equal(result.status,status);assert.deepEqual(result.body,{error});assert.equal(h.calls.some(c=>c[0]==='createUser'),false);
+ }
+ const h=await harness({rpc:async()=>({data:null,error:{message:'Private SQL provider detail'}})});const result=await h.send(storeBody());
+ assert.equal(result.status,503);assert.deepEqual(result.body,{error:'database_unavailable',retryable:true});
+});
+test('store retries retain their request ID and return inactive replay without creating any Auth user',async()=>{
+ const h=await harness({rpc:async()=>({data:{...sampleStore,active:false},error:null})});
+ const results=await Promise.all([h.send(storeBody()),h.send(storeBody())]);
+ for(const result of results) assert.deepEqual(result.body,{ok:true,request_id:id(700),store:{...sampleStore,active:false}});
+ assert.equal(h.calls.filter(c=>c[0]==='rpc').length,2);assert.equal(h.calls.some(c=>c[0]==='createUser'),false);
+ assert.ok(h.calls.filter(c=>c[0]==='rpc').every(c=>c[2].p_request_id===id(700)));
+ const renamed={...sampleStore,name:'Renamed store',code:'NEW1'};
+ const renamedHandler=await harness({rpc:async()=>({data:renamed,error:null})});
+ assert.deepEqual((await renamedHandler.send(storeBody())).body,{ok:true,request_id:id(700),store:renamed});
+});
