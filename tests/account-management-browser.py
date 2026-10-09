@@ -29,6 +29,12 @@ async def main():
    if '/functions/v1/ops-admin-accounts' in url:
     data=r.request.post_data_json;state['requests'].append(data);await asyncio.sleep(state['delay'])
     if data['action']=='list':body={'accounts':state['accounts'],'stores':state['stores']}
+    elif data['action']=='create_store':
+     store=next((s for s in state['stores'] if s.get('requestId')==data['requestId']),None)
+     if not store:
+      store={'id':'20000000-0000-4000-8000-000000000099','name':data['name'],'code':data['code'],'active':True,'requestId':data['requestId']};state['stores'].append(store)
+     if state.get('lost_store'):state['lost_store']=False;return await r.abort()
+     body={'ok':True,'store':store,'request_id':data['requestId']}
     elif data['action']=='create':
      account=next((a for a in state['accounts'] if a.get('requestId')==data['requestId']),None)
      if not account:
@@ -64,6 +70,15 @@ async def main():
   await page.click('#newAccountButton');await page.fill('#accountName','Unfinished');await page.evaluate('refreshAll()');assert await page.input_value('#accountName')=='Unfinished';await page.evaluate('handleAndroidBack()');await page.wait_for_function('!accountManagement.busy');assert await page.locator('#accountPassword').count()==0
   print('PASS: background refresh preserves form, Android Back clears sensitive form')
   assert await page.evaluate('document.documentElement.scrollWidth<=window.innerWidth')
+  await page.click('#newStoreButton');await page.fill('#newStoreName','Fictional North Store');await page.fill('#newStoreCode','FN1')
+  await page.screenshot(path=str(ARTIFACTS/'new-store-form.png'),full_page=True)
+  state['lost_store']=True;await page.click('#createStoreSubmit');await page.wait_for_function('!accountManagement.busy');assert not await page.locator('#newStoreName').is_enabled();assert 'not confirmed' in await page.locator('#newStoreStatus').inner_text()
+  await page.click('#createStoreSubmit');await page.wait_for_function('accountManagement.view==="list"&&!accountManagement.busy');assert len(state['stores'])==3
+  store_requests=[r for r in state['requests'] if r['action']=='create_store'];assert len(store_requests)==2 and store_requests[0]==store_requests[1]
+  await page.click('#newAccountButton');await page.fill('#accountName','Draft Person');await page.click('#inlineNewStoreButton');await page.fill('#newStoreName','Second Fictional Store');await page.fill('#newStoreCode','FN2')
+  await page.screenshot(path=str(ARTIFACTS/'new-store-inline.png'),full_page=True)
+  await page.get_by_text('Cancel new store',exact=True).click();assert await page.input_value('#accountName')=='Draft Person';assert await page.locator('#accountSubmit').is_enabled();await page.evaluate('handleAndroidBack()');await page.wait_for_function('!accountManagement.busy')
+  print('PASS: new store form, lost-response retry, inline cancellation and draft preservation')
   state['role']='hq';await page.evaluate('refreshAll()');assert await page.locator('#accountManagementButton').count()==0;assert await page.evaluate('accountManagement.accounts.length')==0
   state['active']=False;await page.evaluate('refreshAll()');assert await page.locator('#email').count()==1;assert await page.evaluate('session===null')
   print('PASS: demotion and deactivation clear account-management data; narrow layout fits')

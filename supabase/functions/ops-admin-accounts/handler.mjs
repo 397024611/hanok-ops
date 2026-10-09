@@ -12,6 +12,7 @@ const KNOWN_ERRORS = {
   admin_required: 403, invalid_role: 400, invalid_stores: 400, invalid_account: 400,
   request_conflict: 409, email_reserved: 409, email_exists: 409, account_not_pending: 409,
   account_not_found: 404, account_protected: 403, account_inactive: 409, shared_store_fixed: 409,
+  invalid_request_id: 400, invalid_store_name: 400, invalid_store_code: 400, store_code_exists: 409,
 };
 function uuid(value) { return typeof value === 'string' && UUID.test(value); }
 function storeIds(value, role) {
@@ -24,6 +25,13 @@ export function validatePayload(value) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new ApiError('invalid_payload');
   const { action } = value;
   if (action === 'list') return { action };
+  if (action === 'create_store') {
+    if (!uuid(value.requestId)) throw new ApiError('invalid_request_id');
+    if (typeof value.name !== 'string' || Array.from(value.name.trim()).length < 1
+      || Array.from(value.name.trim()).length > 100 || /[\u0000\uD800-\uDFFF]/u.test(value.name)) throw new ApiError('invalid_store_name');
+    if (typeof value.code !== 'string' || !/^[A-Za-z0-9]{2,8}$/.test(value.code.trim())) throw new ApiError('invalid_store_code');
+    return { action, requestId: value.requestId.toLowerCase(), name: value.name.trim(), code: value.code.trim().toUpperCase() };
+  }
   if (action === 'deactivate' || action === 'assign') {
     if (!uuid(value.userId)) throw new ApiError('invalid_user');
     return { action, userId: value.userId.toLowerCase(), ...(action === 'assign' ? { storeIds: storeIds(value.storeIds) } : {}) };
@@ -90,6 +98,12 @@ export function createAccountHandler({ createClient, env }) {
       if (profile?.role !== 'admin' || profile?.active !== true) throw new ApiError('admin_required', 403);
       const payload = await readPayload(req);
       if (payload.action === 'list') return json(await rpc(admin, 'ops_admin_accounts_list', { p_actor_id: actorId }));
+      if (payload.action === 'create_store') {
+        const store = await rpc(admin, 'ops_admin_stores_create', {
+          p_actor_id: actorId, p_request_id: payload.requestId, p_name: payload.name, p_code: payload.code,
+        });
+        return json({ ok: true, request_id: payload.requestId, store });
+      }
       if (payload.action === 'assign' || payload.action === 'deactivate') {
         if (payload.userId === actorId) throw new ApiError('account_protected', 403);
         const account = await rpc(admin, `ops_admin_accounts_${payload.action}`, {
