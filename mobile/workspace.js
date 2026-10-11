@@ -13,6 +13,13 @@ function install(o){
   if(noticeTimer!==null)return;
   noticeTimer=setTimeout(()=>{try{const text=document.getElementById('loginErr')?.textContent||document.getElementById('err')?.textContent;if(text)sessionStorage.setItem('reportboss_notice',text);}catch{}location.replace('./index.html');},0);
  }
+ function initialAccountHelp(){
+  if(o.kind!=='hq'||location.hash!=='#account-help'||o.state().session||manager.saved()||!o.accountHelp)return false;
+  leaving=false;o.accountHelp();
+  const back=document.createElement('a');back.id='accountHelpBack';back.className='secondary';back.href='./index.html';back.textContent='Back to login choices / 返回登录选择';
+  back.onclick=event=>{event.preventDefault();o.clearHelp?.();login();};
+  (document.querySelector('.loginBox')||document.getElementById('app')).append(back);return true;
+ }
  function logout(...args){const s=o.state().session;manager.clear(s);return o.logout(...args);}
  function retry(error){
   const app=document.getElementById('app');app.replaceChildren();const section=document.createElement('section');section.className='login';
@@ -73,7 +80,7 @@ function install(o){
   await notifications();
  }
  window.addEventListener('pagehide',()=>{leaving=true;bootPromise=null;o.suspend?.();document.getElementById('app').replaceChildren();});
- window.addEventListener('pageshow',event=>{if(event.persisted&&o.state().session){const saved=manager.saved();if(!saved||saved.user.id!==o.state().session.user.id){logout(false);return;}o.replace(saved);document.getElementById('app').replaceChildren();boot();}});
+ window.addEventListener('pageshow',event=>{if(event.persisted&&!o.state().session){if(!initialAccountHelp())login();return;}if(event.persisted&&o.state().session){const saved=manager.saved();if(!saved||saved.user.id!==o.state().session.user.id){logout(false);return;}o.replace(saved);document.getElementById('app').replaceChildren();boot();}});
  window.addEventListener('storage',event=>{
   if(!Object.values(ReportBossSession.KEYS).includes(event.key)||event.newValue!==null||!o.state().session)return;
   // A removal event may arrive after another page has already inserted its replacement.
@@ -82,7 +89,7 @@ function install(o){
   if(live?.user?.id===o.state().session.user.id&&live.access_token&&live.refresh_token)return;
   logout(false);
  });
- return {boot,logout,login,sync,hydrate,afterData};
+ return {boot,logout,login,sync,hydrate,afterData,initialAccountHelp};
 }
 root.ReportBossWorkspace={install};
 })(globalThis);

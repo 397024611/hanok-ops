@@ -30,19 +30,23 @@ async def main():
     return await backend.normal(r,r.request,url)
    await page.route('**/*',route)
    await page.goto('https://reportboss.test/index.html')
-   if role=='store':await page.screenshot(path=str(ARTIFACTS/'glass-entry-390.png'),full_page=True)
-   await page.click('[data-entry='+entry+']');await page.fill('#email','fixture@example.invalid');await page.fill('#password','fictional-only');await page.click('#submit')
+   if role=='store':await page.screenshot(path=str(ARTIFACTS/'glass-entry-390.png'),full_page=False)
+   await page.click('[data-entry='+entry+']')
+   if role=='admin':
+    await page.click('#account-help');await page.wait_for_url('https://reportboss.test/hq.html#account-help');await expect(page.get_by_role('button',name='Forgot password',exact=True)).to_be_visible();await expect(page.get_by_role('button',name='Create account',exact=True)).to_be_visible();await page.screenshot(path=str(ARTIFACTS/'glass-account-help-390.png'));await page.click('#accountHelpBack');await page.wait_for_url('https://reportboss.test/index.html');await page.click('[data-entry=boss]')
+   await page.fill('#email','fixture@example.invalid');await page.fill('#password','fictional-only');await page.click('#submit')
    await page.wait_for_url('https://reportboss.test/'+target)
    if role=='admin':
     await page.wait_for_selector('#homeCapture');await page.get_by_role('button',name='Tickets',exact=True).click()
    else:await expect(page.locator('[data-ticket]')).to_have_count(3)
    assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-   await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-tickets-390.png')),full_page=True)
+   if role!='partner':assert await page.locator('.rb-title-row .primary').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(9, 100, 255)'
+   await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-tickets-390.png')),full_page=False)
    if role=='partner':assert await page.locator('.plus').count()==0;assert await page.locator('#assignedStore').count()==1
    if role=='store':
     await page.get_by_role('button',name='Report an issue',exact=True).click();await expect(page.get_by_role('dialog',name='Report Issue')).to_be_visible();await page.fill('#title','Unsubmitted draft');await page.get_by_role('button',name='Close',exact=True).click();await page.get_by_role('button',name='Report an issue',exact=True).click();assert await page.input_value('#title')=='Unsubmitted draft';await page.get_by_role('button',name='Close',exact=True).click()
    if role!='admin':
-    await page.locator('[data-ticket]').first.click();await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-detail-390.png')),full_page=True);await page.get_by_role('button',name='Close',exact=True).click()
+    await page.locator('[data-ticket]').first.click();await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-detail-390.png')),full_page=False);await page.get_by_role('button',name='Close',exact=True).click()
     await page.get_by_role('button',name='Profile',exact=True).click();await page.get_by_role('button',name='Reduce transparency',exact=True).click();assert await page.locator('html').evaluate('(e)=>e.classList.contains("reduce-glass")');await page.get_by_role('button',name='Enable glass',exact=True).click();await page.get_by_role('button',name='Close',exact=True).click()
    else:await page.get_by_role('button',name='Profile',exact=True).click()
    await page.get_by_role('button',name='Sign out',exact=True).click();await page.wait_for_url('https://reportboss.test/index.html');await expect(page.locator('#choose')).to_be_visible();assert await page.evaluate('!localStorage.getItem("hanokops_session")&&!localStorage.getItem("hanok_store_session")')

@@ -1,4 +1,5 @@
 'use strict';
+try{document.documentElement.classList.toggle('reduce-glass',localStorage.getItem('reportboss_reduce_transparency')==='true');}catch{}
 const $=id=>document.getElementById(id),config=window.ReportBossConfig;
 let entry=null,method='individual';
 const sessionStore=window.ReportBossSession?.createSessionStore(localStorage,window.AndroidApp);
@@ -29,6 +30,7 @@ function setMethod(next){
 function showEntry(next){
  const status=document.getElementById('restoreStatus');if(status)status.remove();
  gate.cancel();entry=['boss','staff'].includes(next)?next:null;$('form').reset();$('error').textContent='';$('submit').disabled=false;
+ const help=document.getElementById('account-help');if(help)help.hidden=entry!=='boss';
  $('choose').hidden=!!entry;$('login').hidden=!entry;if(!entry)return;
  $('login-title').textContent=entry==='boss'?'老板登录 / Boss Login':'员工登录 / Staff Login';
  $('login-description').textContent=entry==='boss'?'HQ and partners: use your individual account.':'Use your individual staff account or the existing shared store login.';

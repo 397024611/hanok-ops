@@ -43,9 +43,22 @@ function workspace(source,kind){
   boot=replaceOnce(boot,'finally{showLoading(false)}','finally{if(bootEpoch===sessionEpoch)showLoading(false)}');
   source=source.slice(0,bootStart)+boot+source.slice(bootEnd);
   source=replaceOnce(source,'}catch(e){if(session)lastSyncError=e.message}finally{refreshRunning=false}','}catch(e){if(epoch===sessionEpoch&&session)lastSyncError=e.message}finally{if(epoch===sessionEpoch)refreshRunning=false}');
+  // Preserve existing account-help requests, but prevent a dismissed help screen from publishing late state.
+  const helpMethods=[['signIn','forgotPassword'],['forgotPassword','verifyRecoveryLink'],['verifyRecoveryLink','showNewPasswordForm'],['setRecoveredPassword','signUp'],['signUp','logout']];
+  for(const [name,next] of helpMethods){
+   const from=source.indexOf('async function '+name+'(){'),until=source.indexOf('function '+next+'(',from);
+   if(from<0||until<0)throw Error('Account-help integration marker missing: '+name);
+   let method=source.slice(from,until);
+   method=replaceOnce(method,'async function '+name+'(){','async function '+name+'(){\n  const accountHelpEpoch=sessionEpoch;');
+   if(name==='signIn'||name==='signUp')method=replaceOnce(method,'const j=await r.json();','const j=await r.json();if(accountHelpEpoch!==sessionEpoch)return;');
+   if(name==='forgotPassword'||name==='setRecoveredPassword')method=replaceOnce(method,'    if(!r.ok)throw','    if(accountHelpEpoch!==sessionEpoch)return;\n    if(!r.ok)throw');
+   if(name==='verifyRecoveryLink')method=replaceOnce(method,'    recoveryAccessToken=accessToken;','    if(accountHelpEpoch!==sessionEpoch)return;\n    recoveryAccessToken=accessToken;');
+   method=method.replace(/catch\(e\)\{/g,'catch(e){if(accountHelpEpoch!==sessionEpoch)return;').replace(/finally\{showLoading\(false\)\}/g,'finally{if(accountHelpEpoch===sessionEpoch)showLoading(false)}');
+   source=source.slice(0,from)+method+source.slice(until);
+  }
  }
  else source=replaceOnce(source,'window.addEventListener("storage",e=>{if(e.key===SESSION_KEY&&e.newValue===null&&session)logout(false)});','// Cross-document storage changes are handled by the scoped mobile session manager.');
- const extra=hqMode?`,suspend:()=>{sessionEpoch++;refreshPromise=null;refreshRunning=false;clearInterval(refreshTimer);refreshTimer=null;closeDetail();}`:`,suspend:()=>{authEpoch++;refreshPromise=null;accessPromise=null;authController.abort();authController=new AbortController();clearInterval(timer);timer=null;clearStoreContext();},refreshAccess:()=>refreshAccess(),api:(...args)=>api(...args),switchStore:id=>switchStore(id),detail:id=>detail(id),close:()=>closeOverlay(),toast:text=>toast(text),share:text=>{if(profile?.role==='store'){if(draft?.payload||draft?.busy){toast('Finish your current submission before adding shared text.');return false;}newTicket();const input=document.getElementById('desc');if(!input)return false;input.value=(input.value?input.value+'\\n':'')+text;input.dispatchEvent(new Event('input',{bubbles:true}));}else toast('Quick Capture is available to staff and HQ accounts.');return true;}`;
+ const extra=hqMode?`,accountHelp:showLogin,clearHelp:()=>{sessionEpoch++;recoveryAccessToken='';document.querySelectorAll('input').forEach(input=>input.value='');},suspend:()=>{sessionEpoch++;recoveryAccessToken='';refreshPromise=null;refreshRunning=false;clearInterval(refreshTimer);refreshTimer=null;closeDetail();}`:`,suspend:()=>{authEpoch++;refreshPromise=null;accessPromise=null;authController.abort();authController=new AbortController();clearInterval(timer);timer=null;clearStoreContext();},refreshAccess:()=>refreshAccess(),api:(...args)=>api(...args),switchStore:id=>switchStore(id),detail:id=>detail(id),close:()=>closeOverlay(),toast:text=>toast(text),share:text=>{if(profile?.role==='store'){if(draft?.payload||draft?.busy){toast('Finish your current submission before adding shared text.');return false;}newTicket();const input=document.getElementById('desc');if(!input)return false;input.value=(input.value?input.value+String.fromCharCode(10):'')+text;input.dispatchEvent(new Event('input',{bubbles:true}));}else toast('Quick Capture is available to staff and HQ accounts.');return true;}`;
  const hooks=`
 // Generated native workspace integration. The standalone web portal keeps its original URL and login flow.
 const mobileWorkspace=ReportBossWorkspace.install({kind:'${kind}',url:SB_URL,key:SB_KEY,state:()=>${state},replace:next=>{session=next;if(next)localStorage.setItem('${key}',JSON.stringify(next));},boot:boot,logout:logout,refresh:()=>${hqMode?'refreshSession()':'refresh()'}${extra}});
@@ -60,7 +73,7 @@ window.receiveNotificationTicket=id=>{if(typeof id==='string'&&id){localStorage.
 window.receiveNotificationInbox=()=>{localStorage.setItem('hanokops_pending_ticket','inbox');mobileWorkspace.afterData();};
 window.receiveSharedText=text=>{if(typeof text==='string'&&text){localStorage.setItem('hanokops_pending_share',text);mobileWorkspace.afterData();}};
 window.handleAndroidBack=()=>{if(view){closeOverlay();return true;}return false;};`}
-${end}`;
+${hqMode?'if(session)boot();else if(!mobileWorkspace.initialAccountHelp())showLogin();':end}`;
  return replaceOnce(source,end,hooks);
 }
 fs.writeFileSync(path.join(out,'hq.html'),workspace(hq,'hq'));

@@ -10,3 +10,9 @@ html,body{background:#eef0f2 url('assets/glass-background.png') center/cover fix
 .reduce-glass,.reduce-glass body,.reduce-glass .overlay{background:#f3f4f6}.reduce-glass .stat,.reduce-glass .card,.reduce-glass .detailCard,.reduce-glass .captureBox,.reduce-glass .storeOverview .box,.reduce-glass .briefStat,.reduce-glass .loginBox,.reduce-glass .loginCard,.reduce-glass .rb-sheet,.reduce-glass .rb-filters{background:#fff;backdrop-filter:none;border-color:#dddfe5}.reduce-glass .rb-ticket{background:transparent;border:0;border-radius:0}.reduce-glass .rb-ticket+.rb-ticket{border-top:1px solid #dddfe5}
 
 .attachment,.attachment button,.attachment a{background:#ffffff60;color:#454956}.state-summary{padding:12px;margin-top:12px}.state-summary p{font-size:13px;color:#5e606d;line-height:1.5}
+
+.rb-title-row .primary,.rb-hq-tickets .pageHead .primary{background:#0964ff;color:#fff}.rb-eyebrow.storeName{font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:400;letter-spacing:1.3px}.rb-ticket.urgent .ticket-title{max-width:230px}.rb-store .rb-ticket .age{position:absolute;right:0;bottom:15px;margin:0}.rb-store .rb-ticket{min-height:100px;padding-bottom:34px}.rb-store .rb-ticket.urgent{min-height:130px}
+
+.overlay{overscroll-behavior:contain}
+
+.loginBox a.secondary{display:block;text-align:center;text-decoration:none;line-height:1.4;margin-top:16px;min-height:44px}

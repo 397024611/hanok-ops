@@ -13,10 +13,11 @@ test('mobile build integrates native role workspaces while preserving raw source
 });
 function fixture(kind,role,options={}){
  const html=fs.readFileSync('mobile-dist/'+kind+'.html','utf8'),vc=new VirtualConsole();vc.on('jsdomError',e=>{if(!e.message.includes('navigation'))throw e;});
- const dom=new JSDOM(html,{url:'https://hanokops.local/'+kind+'.html',runScripts:'outside-only',virtualConsole:vc}),w=dom.window;
+ const dom=new JSDOM(html,{url:'https://hanokops.local/'+kind+'.html'+(options.hash||''),runScripts:'outside-only',virtualConsole:vc}),w=dom.window;
  w.AbortController=AbortController;w.AbortSignal=AbortSignal;w.URL.createObjectURL=()=>'';w.URL.revokeObjectURL=()=>{};
  const s={user:{id:'u'},access_token:'fake-access',refresh_token:'fake-refresh'},state={role,active:true,authId:'u',calls:[],native:JSON.stringify({access_token:'fake-access',refresh_token:'fake-refresh'}),clears:0};
- w.localStorage.setItem(kind==='hq'?'hanokops_session':'hanok_store_session',JSON.stringify(s));
+ if(!options.noSession)w.localStorage.setItem(kind==='hq'?'hanokops_session':'hanok_store_session',JSON.stringify(s));
+ else state.native='null';
  w.AndroidApp={getStoredSession:()=>state.native,updateRoleSession:(a,r,role,expected)=>{state.native=JSON.stringify({access_token:a,refresh_token:r,role});return true},saveRoleSession:(a,r,role)=>{state.native=JSON.stringify({access_token:a,refresh_token:r,role});return true},clearSessionIfCurrent:expected=>{if(JSON.parse(state.native||'null')?.refresh_token!==expected)return false;state.clears++;state.native='null';return true},notifyAlerts(){},getVersionName:()=> '0.9.2'};
  if(options.native===false)delete w.AndroidApp;
  w.fetch=async(url,opts={})=>{
@@ -48,7 +49,8 @@ test('generated store refuses inactive identity and never requests tickets',asyn
 test('native shared text updates the staff draft model and survives close/reopen',async()=>{
  const {dom,w}=fixture('store','store');await settle();w.receiveSharedText('Fictional broken fridge');await settle();
  assert.equal(w.document.getElementById('desc').value,'Fictional broken fridge');
- w.closeOverlay();w.newTicket();assert.equal(w.document.getElementById('desc').value,'Fictional broken fridge');
+ w.receiveSharedText('Fictional follow-up');await settle();assert.equal(w.document.getElementById('desc').value,'Fictional broken fridge\nFictional follow-up');
+ w.closeOverlay();w.newTicket();assert.equal(w.document.getElementById('desc').value,'Fictional broken fridge\nFictional follow-up');
  assert.equal(w.localStorage.getItem('hanokops_pending_share'),null);dom.window.close();
 });
 test('native ticket intent never opens a ticket hidden by server access',async()=>{
@@ -110,4 +112,34 @@ test('obsolete HQ boot cannot replace a successfully resumed workspace with its 
  const before=w.document.getElementById('app').textContent;assert.ok(before.includes('Fictional Person'));
  finish(new Response(JSON.stringify([{user_id:'u',role:'hq',active:true,display_name:'Obsolete Person',email:'old@example.invalid'}]),{status:200}));await obsolete;await settle();
  assert.equal(w.document.getElementById('app').textContent,before);assert.equal(w.__redirect,undefined);assert.ok(w.localStorage.getItem('hanokops_session'));dom.window.close();
+});
+test('explicit signed-out account-help route preserves legacy recovery/signup controls and Back',async()=>{
+ const {dom,w,state}=fixture('hq','hq',{hash:'#account-help',noSession:true});await settle();
+ const text=w.document.getElementById('app').textContent;assert.match(text,/Forgot password/);assert.match(text,/Create account/);assert.ok(w.document.getElementById('recoveryLink'));assert.ok(w.document.getElementById('accountHelpBack'));
+ assert.equal(state.calls.length,0);assert.equal(w.__redirect,undefined);
+ w.document.getElementById('accountHelpBack').click();await settle();assert.equal(w.__redirect,'./index.html');assert.equal(w.localStorage.getItem('hanokops_session'),null);dom.window.close();
+});
+test('account help reuses recovery endpoints and returns safely to selector after password update',async()=>{
+ const {dom,w,state}=fixture('hq','hq',{hash:'#account-help',noSession:true});await settle();const requests=[];
+ w.fetch=async(url,opts)=>{requests.push({url,method:opts.method,body:JSON.parse(opts.body)});if(url.endsWith('/auth/v1/verify'))return new Response(JSON.stringify({access_token:'fictional-recovery-token'}),{status:200});return new Response('{}',{status:200});};
+ w.document.getElementById('email').value='fictional@example.invalid';await w.forgotPassword();assert.ok(!w.document.getElementById('recoveryTools').classList.contains('hidden'));
+ w.document.getElementById('recoveryLink').value='https://example.invalid/reset?token_hash=fictional-hash';await w.verifyRecoveryLink();
+ assert.ok(w.document.getElementById('newPassword'));w.document.getElementById('newPassword').value='fictional-password-only';w.document.getElementById('confirmPassword').value='fictional-password-only';await w.setRecoveredPassword();await settle();
+ assert.deepEqual(requests.map(r=>new URL(r.url).pathname),['/auth/v1/recover','/auth/v1/verify','/auth/v1/user']);
+ assert.equal(requests[1].body.type,'recovery');assert.equal(requests[2].method,'PUT');assert.equal(w.__redirect,'./index.html');assert.equal(w.localStorage.length,0);dom.window.close();
+});
+test('account help keeps original signup payload with no role or membership grant',async()=>{
+ const {dom,w}=fixture('hq','hq',{hash:'#account-help',noSession:true});await settle();let payload,url;
+ w.fetch=async(u,opts)=>{url=u;payload=JSON.parse(opts.body);return new Response(JSON.stringify({user:{id:'pending-user'}}),{status:200});};
+ w.document.getElementById('email').value='new@example.invalid';w.document.getElementById('password').value='fictional-password-only';await w.signUp();
+ assert.ok(url.endsWith('/auth/v1/signup'));assert.deepEqual(payload,{email:'new@example.invalid',password:'fictional-password-only',data:{display_name:'new'}});assert.equal(w.localStorage.getItem('hanokops_session'),null);dom.window.close();
+});
+test('leaving account help cancels late recovery completion without restoring password UI',async()=>{
+ const {dom,w}=fixture('hq','hq',{hash:'#account-help',noSession:true});await settle();let finish;
+ w.fetch=()=>new Promise(resolve=>finish=resolve);w.document.getElementById('recoveryLink').value='https://example.invalid/reset?token_hash=fictional-hash';const pending=w.verifyRecoveryLink();
+ w.document.getElementById('accountHelpBack').click();await settle();finish(new Response(JSON.stringify({access_token:'fictional-recovery-token'}),{status:200}));await pending;
+ assert.equal(w.__redirect,'./index.html');assert.equal(w.document.getElementById('newPassword'),null);assert.equal(w.localStorage.getItem('hanokops_session'),null);dom.window.close();
+});
+test('existing active workspace does not bypass verification through account-help fragment',async()=>{
+ const {dom,w,state}=fixture('hq','store',{hash:'#account-help'});await settle();assert.equal(w.document.getElementById('accountHelpBack'),null);assert.equal(w.__redirect,'./index.html');assert.ok(!state.calls.some(u=>u.includes('/ops_tickets?')));dom.window.close();
 });
