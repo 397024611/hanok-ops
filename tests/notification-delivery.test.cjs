@@ -59,14 +59,14 @@ test('Inbox and single-ticket taps preserve pending routing across app boot',()=
  context.session=null;vm.runInContext('receiveNotificationTicket("synthetic-ticket");receiveNotificationInbox()',context);
  context.session={};vm.runInContext('consumePendingTicket()',context);assert.equal(visits.at(-1),'alerts');
  assert.match(activity,/getBooleanExtra\("notification_inbox", false\)/);
- assert.match(activity,/window\.receiveNotificationInbox && receiveNotificationInbox\(\)/);
+ assert.match(activity,/"receiveNotificationInbox\(\)"/);
 });
 test('foreground/background use the same atomic native batch path and late session guard',()=>{
  assert.match(native,/static synchronized boolean postBatchForSession/);
  assert.match(native,/sameSession\(context, expectedRefreshToken\) && postBatch\(context, rows\)/);
  assert.ok(native.indexOf('manager.notify(')<native.indexOf('for (String id : deliveredIds) posted.add(id)'));
  assert.match(worker,/NotificationDelivery\.postBatchForSession\(this, newRefreshToken, notifications\)/);
- assert.match(worker,/synchronized \(NotificationDelivery\.class\) \{\s*if \(foreground \|\| !newRefreshToken/);
+ assert.match(worker,/synchronized \(NotificationDelivery\.class\) \{\s*if \(run != runGeneration \|\| foreground \|\| !newRefreshToken/);
  assert.match(activity,/NotificationDelivery\.postBatchForSession\(MainActivity.this, expectedRefreshToken, new JSONArray\(rowsJson\)\)/);
  assert.doesNotMatch(worker,/seen.add|postForSession\(this/);
 });
@@ -122,6 +122,7 @@ public class NotificationDeliveryHarness {
   static int IMPORTANCE_NONE=0,IMPORTANCE_HIGH=4;boolean enabled=true,fail=false;int posts=0;
   Notification last;String tag;Runnable beforeNotify=()->{};NotificationChannel channel=new NotificationChannel("test","test",4);
   boolean areNotificationsEnabled(){return enabled;}NotificationChannel getNotificationChannel(String id){return channel;}
+  void cancelAll(){last=null;}
   void createNotificationChannel(NotificationChannel value){if(channel==null)channel=value;}
   void notify(String value,int id,Notification n){beforeNotify.run();if(fail)throw new SecurityException("Synthetic failure");posts++;tag=value;last=n;}
  }
