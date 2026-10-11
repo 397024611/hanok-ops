@@ -1,12 +1,17 @@
 <resources>
     <color name="navy">#071A29</color>
     <color name="gold">#B79253</color>
+    <color name="app_surface">#EEF0F2</color>
+    <color name="app_accent">#43525D</color>
+    <color name="app_navigation_legacy">#303941</color>
     <style name="Theme.HanokOps.Base" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">@color/gold</item>
-        <item name="android:statusBarColor">@color/navy</item>
-        <item name="android:navigationBarColor">@color/navy</item>
-        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:colorAccent">@color/app_accent</item>
+        <item name="android:windowBackground">@color/app_surface</item>
+        <item name="android:statusBarColor">@color/app_surface</item>
+        <!-- API 24–26 lack this theme's dark navigation icon support; keep white icons legible. -->
+        <item name="android:navigationBarColor">@color/app_navigation_legacy</item>
+        <item name="android:windowLightStatusBar">true</item>
         <item name="android:windowNoTitle">true</item>
     </style>
     <style name="Theme.HanokOps" parent="Theme.HanokOps.Base" />

@@ -11,9 +11,13 @@ local.properties
 
 # Local validation dependencies and outputs
 node_modules/
+node_modules
 tests/*.png
 __pycache__/
 
 # Isolated validation output and local Supabase CLI state
 tests/artifacts/
 supabase/.temp/
+
+# Generated local dual-platform preview
+/mobile-dist/

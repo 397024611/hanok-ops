@@ -1,5 +1,6 @@
 <resources>
     <style name="Theme.HanokOps" parent="Theme.HanokOps.Base">
-        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:navigationBarColor">@color/app_surface</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
 </resources>

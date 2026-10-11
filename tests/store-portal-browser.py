@@ -6,6 +6,7 @@ Requires Python playwright and Chromium (CHROMIUM_PATH optionally overrides it).
 import asyncio
 import copy
 import json
+import mimetypes
 import os
 from pathlib import Path
 import unittest
@@ -35,8 +36,11 @@ class Backend:
         req = route.request
         url = urlsplit(req.url)
         if url.netloc == "portal.test":
-            name = "admin.html" if url.path == "/admin.html" else "index.html"
-            await route.fulfill(status=200, content_type="text/html", body=(ROOT / "store-portal" / name).read_text())
+            relative = url.path.lstrip("/") or "index.html"
+            asset = (ROOT / "store-portal" / relative).resolve()
+            if not asset.is_relative_to((ROOT / "store-portal").resolve()) or not asset.is_file():
+                return await route.fulfill(status=404, body="Not found")
+            await route.fulfill(status=200, content_type=mimetypes.guess_type(str(asset))[0] or "application/octet-stream", body=asset.read_bytes())
             return
         if url.netloc != "tqfwbsjchespjkxliodo.supabase.co":
             await route.abort()

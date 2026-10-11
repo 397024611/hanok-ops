@@ -10,8 +10,8 @@ android {
         applicationId 'com.hanokgroup.ops'
         minSdk 24
         targetSdk 35
-        versionCode 15
-        versionName '0.9.2'
+        versionCode 16
+        versionName '0.10.0'
     }
 
     signingConfigs {
@@ -35,6 +35,10 @@ android {
         }
     }
 
+    sourceSets {
+        main.assets.srcDirs = ["../../mobile-dist"]
+    }
+
     buildFeatures {
         buildConfig true
     }
@@ -43,4 +47,13 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+}
+
+// Package the generated entry/HQ/store bundle together; never fall back to old HQ-only assets.
+tasks.register('prepareMobileAssets', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine 'node', 'scripts/build-mobile.cjs'
+}
+tasks.named('preBuild').configure {
+    dependsOn tasks.named('prepareMobileAssets')
 }

@@ -47,6 +47,9 @@ public class MainActivity extends Activity {
     private String pendingSharedText;
     private String pendingTicketId;
     private boolean pendingNotificationInbox;
+    private final Object pendingRouteLock = new Object();
+    private int ticketRouteGeneration, shareRouteGeneration;
+    private int ticketDeliveryGeneration = -1, shareDeliveryGeneration = -1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +60,7 @@ public class MainActivity extends Activity {
         captureTicketIntent(getIntent());
 
         webView = new WebView(this);
-        webView.setBackgroundColor(0xFF071A29);
+        webView.setBackgroundColor(0xFFEEF0F2);
         setContentView(webView);
 
         WebSettings s = webView.getSettings();
@@ -146,15 +149,19 @@ public class MainActivity extends Activity {
 
     private void captureTicketIntent(Intent intent) {
         if (intent == null) return;
+        synchronized (pendingRouteLock) {
         if (intent.getBooleanExtra("notification_inbox", false)) {
+            ticketRouteGeneration++;
             pendingNotificationInbox = true;
             pendingTicketId = null;
             return;
         }
         String ticketId = intent.getStringExtra("ticket_id");
         if (ticketId != null && !ticketId.trim().isEmpty()) {
+            ticketRouteGeneration++;
             pendingTicketId = ticketId.trim();
             pendingNotificationInbox = false;
+        }
         }
     }
 
@@ -169,27 +176,51 @@ public class MainActivity extends Activity {
         if (subject != null && !subject.trim().isEmpty() && !text.startsWith(subject.trim())) {
             text = subject.trim() + "\n" + text;
         }
-        if (!text.trim().isEmpty()) pendingSharedText = text.trim();
+        if (!text.trim().isEmpty()) {
+            synchronized (pendingRouteLock) { shareRouteGeneration++; pendingSharedText = text.trim(); }
+        }
     }
 
     private void deliverPendingTicket() {
         if (webView == null) return;
-        if (pendingNotificationInbox) {
-            pendingNotificationInbox = false;
-            webView.evaluateJavascript("window.receiveNotificationInbox && receiveNotificationInbox()", null);
-            return;
+        final String ticket;
+        final boolean inbox;
+        final int generation;
+        synchronized (pendingRouteLock) {
+            ticket = pendingTicketId;
+            inbox = pendingNotificationInbox;
+            generation = ticketRouteGeneration;
+            if ((!inbox && (ticket == null || ticket.isEmpty())) || ticketDeliveryGeneration == generation) return;
+            ticketDeliveryGeneration = generation;
         }
-        if (pendingTicketId == null || pendingTicketId.isEmpty()) return;
-        String quoted = JSONObject.quote(pendingTicketId);
-        pendingTicketId = null;
-        webView.evaluateJavascript("window.receiveNotificationTicket && receiveNotificationTicket(" + quoted + ")", null);
+        String invocation = inbox ? "receiveNotificationInbox()" : "receiveNotificationTicket(" + JSONObject.quote(ticket) + ")";
+        String handler = inbox ? "receiveNotificationInbox" : "receiveNotificationTicket";
+        webView.evaluateJavascript("(function(){if(!AndroidApp.isPendingRouteCurrent(\"ticket\"," + generation + "))return false;if(typeof window." + handler + "!==\"function\")return false;" + invocation + ";return true})()", result -> {
+            synchronized (pendingRouteLock) {
+                if (ticketDeliveryGeneration == generation) ticketDeliveryGeneration = -1;
+                if (!"true".equals(result) || generation != ticketRouteGeneration) return;
+                if (inbox) pendingNotificationInbox = false;
+                else if (ticket.equals(pendingTicketId)) pendingTicketId = null;
+            }
+        });
     }
 
     private void deliverPendingShare() {
-        if (pendingSharedText == null || pendingSharedText.isEmpty() || webView == null) return;
-        String quoted = JSONObject.quote(pendingSharedText);
-        pendingSharedText = null;
-        webView.evaluateJavascript("window.receiveSharedText && receiveSharedText(" + quoted + ")", null);
+        if (webView == null) return;
+        final String text;
+        final int generation;
+        synchronized (pendingRouteLock) {
+            text = pendingSharedText;
+            generation = shareRouteGeneration;
+            if (text == null || text.isEmpty() || shareDeliveryGeneration == generation) return;
+            shareDeliveryGeneration = generation;
+        }
+        webView.evaluateJavascript("(function(){if(!AndroidApp.isPendingRouteCurrent(\"share\"," + generation + "))return false;if(typeof window.receiveSharedText!==\"function\")return false;receiveSharedText(" + JSONObject.quote(text) + ");return true})()", result -> {
+            synchronized (pendingRouteLock) {
+                if (shareDeliveryGeneration == generation) shareDeliveryGeneration = -1;
+                if ("true".equals(result) && generation == shareRouteGeneration && text.equals(pendingSharedText)) pendingSharedText = null;
+            }
+        });
     }
 
     @Override
@@ -222,30 +253,43 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void saveNativeSession(String accessToken, String refreshToken) {
-        if (accessToken == null || refreshToken == null || refreshToken.isEmpty()) return;
+    private boolean saveNativeSession(String accessToken, String refreshToken, String role,
+            String expectedRefreshToken, boolean compareAndSet) {
         synchronized (NotificationDelivery.class) {
-        getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
-                .edit()
-                .putString("access_token", accessToken)
-                .putString("refresh_token", refreshToken)
-                .apply();
+            android.content.SharedPreferences prefs = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE);
+            String oldOwner = NativeSessionState.owner(prefs.getString("access_token", ""));
+            String oldRole = prefs.getString("session_role", "");
+            boolean saved = NativeSessionState.save(prefs,
+                    accessToken, refreshToken, role, expectedRefreshToken, compareAndSet);
+            if (saved) {
+                if (!oldOwner.equals(NativeSessionState.owner(accessToken))
+                        || (role != null && !oldRole.isEmpty() && !oldRole.equals(role))) {
+                    NotificationDelivery.cancelPosted(this);
+                }
+                scheduleNotificationJob();
+            }
+            return saved;
         }
-        scheduleNotificationJob();
     }
 
-    private void clearNativeSession() {
+    private boolean clearNativeSession(String expectedRefreshToken, boolean compareAndSet) {
         synchronized (NotificationDelivery.class) {
-        getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
-                .edit()
-                .remove("access_token")
-                .remove("refresh_token")
-                .remove("notified_ids")
-                .remove(NotificationDelivery.ACKS)
-                .apply();
+            if (!NativeSessionState.clear(getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE),
+                    expectedRefreshToken, compareAndSet)) return false;
+            NotificationDelivery.cancelPosted(this);
+            JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
+            if (scheduler != null) scheduler.cancel(NotificationPollJob.JOB_ID);
+            synchronized (pendingRouteLock) {
+                ticketRouteGeneration++;
+                shareRouteGeneration++;
+                ticketDeliveryGeneration = -1;
+                shareDeliveryGeneration = -1;
+                pendingTicketId = null;
+                pendingNotificationInbox = false;
+                pendingSharedText = null;
+            }
+            return true;
         }
-        JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
-        if (scheduler != null) scheduler.cancel(NotificationPollJob.JOB_ID);
     }
 
     private void scheduleNotificationJob() {
@@ -253,6 +297,8 @@ public class MainActivity extends Activity {
         try {
             JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
             if (scheduler == null) return;
+            // Refreshing credentials must not continually reset the periodic job's deadline.
+            if (scheduler.getPendingJob(NotificationPollJob.JOB_ID) != null) return;
             JobInfo info = new JobInfo.Builder(
                     NotificationPollJob.JOB_ID,
                     new ComponentName(this, NotificationPollJob.class)
@@ -274,15 +320,17 @@ public class MainActivity extends Activity {
     }
 
     private String storedNativeSession() {
-        String access, refresh;
+        String access, refresh, role;
         synchronized (NotificationDelivery.class) {
             access = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).getString("access_token", "");
             refresh = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).getString("refresh_token", "");
+            role = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).getString("session_role", "");
         }
         try {
             JSONObject out = new JSONObject();
             out.put("access_token", access);
             out.put("refresh_token", refresh);
+            out.put("role", role);
             return out.toString();
         } catch (Exception e) {
             return "{}";
@@ -317,6 +365,7 @@ public class MainActivity extends Activity {
             JobScheduler scheduler = getSystemService(JobScheduler.class);
             out.put("jobScheduled", scheduler != null && scheduler.getPendingJob(NotificationPollJob.JOB_ID) != null);
             out.put("sessionAvailable", !prefs.getString("refresh_token", "").isEmpty());
+            out.put("sessionRole", prefs.getString("session_role", ""));
             android.os.PowerManager power = getSystemService(android.os.PowerManager.class);
             if (power != null) {
                 out.put("batterySaver", power.isPowerSaveMode());
@@ -339,6 +388,16 @@ public class MainActivity extends Activity {
     }
 
     public class AppBridge {
+        @JavascriptInterface
+        public boolean isPendingRouteCurrent(String kind, int generation) {
+            synchronized (pendingRouteLock) {
+                if ("ticket".equals(kind)) return generation == ticketRouteGeneration
+                        && (pendingNotificationInbox || (pendingTicketId != null && !pendingTicketId.isEmpty()));
+                return "share".equals(kind) && generation == shareRouteGeneration
+                        && pendingSharedText != null && !pendingSharedText.isEmpty();
+            }
+        }
+
         @JavascriptInterface
         public boolean notifyAlerts(String rowsJson, String expectedRefreshToken) {
             try {
@@ -376,13 +435,28 @@ public class MainActivity extends Activity {
         }
 
         @JavascriptInterface
+        public boolean saveRoleSession(String accessToken, String refreshToken, String role) {
+            return saveNativeSession(accessToken, refreshToken, role, null, false);
+        }
+
+        @JavascriptInterface
+        public boolean updateRoleSession(String accessToken, String refreshToken, String role, String expectedRefreshToken) {
+            return saveNativeSession(accessToken, refreshToken, role, expectedRefreshToken, true);
+        }
+
+        @JavascriptInterface
+        public boolean clearSessionIfCurrent(String expectedRefreshToken) {
+            return clearNativeSession(expectedRefreshToken, true);
+        }
+
+        @JavascriptInterface
         public void saveSession(String accessToken, String refreshToken) {
-            saveNativeSession(accessToken, refreshToken);
+            saveNativeSession(accessToken, refreshToken, null, null, false);
         }
 
         @JavascriptInterface
         public void clearSession() {
-            clearNativeSession();
+            clearNativeSession(null, false);
         }
 
         @JavascriptInterface

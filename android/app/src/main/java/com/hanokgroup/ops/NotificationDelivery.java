@@ -23,6 +23,15 @@ final class NotificationDelivery {
     static final String CHANNEL = "hanok_ops_alerts";
     static final String ACKS = "posted_notification_ids_v2";
 
+    static void cancelPosted(Context context) {
+        try {
+            NotificationManager manager = context.getSystemService(NotificationManager.class);
+            if (manager != null) manager.cancelAll();
+        } catch (RuntimeException ignored) {
+            // Session transitions must still finish if the system service is unavailable.
+        }
+    }
+
     static String blockedReason(Context context) {
         if (Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) return "permission_denied";

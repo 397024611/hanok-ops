@@ -201,7 +201,7 @@ test('store: authenticated media retry refreshes once and blob URLs are revoked 
 
 test('store: HTML from backend is escaped and ticket cards are keyboard buttons', async t => {
   const a = await fixture(t, { rows: { ops_tickets: [ticket(undefined, { title: '<img src=x onerror=alert(1)>', status: '<svg/onload=alert(1)>' })] } });
-  assert.equal(a.doc.querySelector('.ticket').tagName, 'BUTTON'); assert.equal(a.doc.querySelector('.ticket img'), null); assert.equal(a.doc.querySelector('.ticket svg'), null);
+  assert.equal(a.doc.querySelector('.ticket').tagName, 'BUTTON'); assert.equal(a.doc.querySelector('.ticket img:not([src="assets/icons/chevron.svg"])'), null); assert.equal(a.doc.querySelector('.ticket [onerror],.ticket [onload]'), null); assert.match(a.doc.querySelector('.ticket').textContent, /<img src=x onerror=alert\(1\)>/); assert.equal(a.doc.querySelector('.ticket svg'), null);
 });
 
 async function adminLogin(t) {

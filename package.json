@@ -7,7 +7,10 @@
     "test:browser:store": "python tests/store-portal-browser.py",
     "check": "node scripts/check-syntax.cjs",
     "test:browser:accounts": "python tests/account-management-browser.py",
-    "test:browser:partners": "python tests/store-accounts-browser.py"
+    "test:browser:partners": "python tests/store-accounts-browser.py",
+    "build:mobile": "node scripts/build-mobile.cjs",
+    "test:mobile": "node --test tests/mobile-entry*.test.cjs",
+    "test:browser:mobile": "python tests/mobile-entry-browser.py"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
