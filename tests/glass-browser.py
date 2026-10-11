@@ -37,12 +37,12 @@ async def main():
     await page.wait_for_selector('#homeCapture');await page.get_by_role('button',name='Tickets',exact=True).click()
    else:await expect(page.locator('[data-ticket]')).to_have_count(3)
    assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-   await page.screenshot(path=str(ARTIFACTS/'glass-'+role+'-tickets-390.png'),full_page=True)
+   await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-tickets-390.png')),full_page=True)
    if role=='partner':assert await page.locator('.plus').count()==0;assert await page.locator('#assignedStore').count()==1
    if role=='store':
     await page.get_by_role('button',name='Report an issue',exact=True).click();await expect(page.get_by_role('dialog',name='Report Issue')).to_be_visible();await page.fill('#title','Unsubmitted draft');await page.get_by_role('button',name='Close',exact=True).click();await page.get_by_role('button',name='Report an issue',exact=True).click();assert await page.input_value('#title')=='Unsubmitted draft';await page.get_by_role('button',name='Close',exact=True).click()
    if role!='admin':
-    await page.locator('[data-ticket]').first.click();await page.screenshot(path=str(ARTIFACTS/'glass-'+role+'-detail-390.png'),full_page=True);await page.get_by_role('button',name='Close',exact=True).click()
+    await page.locator('[data-ticket]').first.click();await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-detail-390.png')),full_page=True);await page.get_by_role('button',name='Close',exact=True).click()
     await page.get_by_role('button',name='Profile',exact=True).click();await page.get_by_role('button',name='Reduce transparency',exact=True).click();assert await page.locator('html').evaluate('(e)=>e.classList.contains("reduce-glass")');await page.get_by_role('button',name='Enable glass',exact=True).click();await page.get_by_role('button',name='Close',exact=True).click()
    else:await page.get_by_role('button',name='Profile',exact=True).click()
    await page.get_by_role('button',name='Sign out',exact=True).click();await page.wait_for_url('https://reportboss.test/index.html');await expect(page.locator('#choose')).to_be_visible();assert await page.evaluate('!localStorage.getItem("hanokops_session")&&!localStorage.getItem("hanok_store_session")')
