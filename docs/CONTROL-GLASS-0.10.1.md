@@ -18,4 +18,4 @@ Version 0.10.1 / Android code 17. Based on production main b4c7b11eb6e1409caa3d7
 
 There are no backend, SQL/RLS, credential, signing-key, application-ID or WebView-origin changes. The native surface/accent colors align with the new canvas. Release version checks are updated to 0.10.1/code17; signing behavior is unchanged.
 
-See `design-qa.md` for passed checks and explicitly pending gates. No screenshot from the 0.10.0 release is evidence of this new layout.
+See `design-qa.md` for the 0.10.1 browser acceptance, CI references and remaining physical-device/artifact gates. No screenshot from the 0.10.0 release is evidence of this new layout.
