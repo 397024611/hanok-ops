@@ -16,3 +16,9 @@ html,body{background:#eef0f2 url('assets/glass-background.png') center/cover fix
 .overlay{overscroll-behavior:contain}
 
 .loginBox a.secondary{display:block;text-align:center;text-decoration:none;line-height:1.4;margin-top:16px;min-height:44px}
+
+.rb-ticket,.rb-store .rb-ticket{min-height:112px;padding:22px 27px 23px 27px}.rb-ticket.urgent,.rb-store .rb-ticket.urgent{min-height:140px}.rb-ticket .age,.rb-store .rb-ticket .age{position:absolute;right:0;bottom:18px;margin:0}.rb-store .sub:not(.partner-sub){display:none}.rb-sheet-footer .sync{margin:0;font-size:10px;align-items:baseline;line-height:1.5}.rb-sheet-footer .sync i{width:6px;height:6px;flex-shrink:0}
+
+.rb-store .sub{display:none}.rb-store.partner .storeName{display:none}
+
+.rb-group:after{order:1}.rb-group-count{order:2;margin-left:0}

@@ -22,6 +22,8 @@ function install(o){
  }
  function logout(...args){const s=o.state().session;manager.clear(s);return o.logout(...args);}
  function retry(error){
+  // The current boot owns this failure handoff, including a legacy auth spinner started before its epoch advanced.
+  document.getElementById('loading')?.classList.remove('show');
   const app=document.getElementById('app');app.replaceChildren();const section=document.createElement('section');section.className='login';
   const box=document.createElement('div');box.className='loginBox';const title=document.createElement('h2');title.textContent='Connection unavailable';
   const message=document.createElement('p');message.textContent='Could not verify your session. Please reconnect and retry.';

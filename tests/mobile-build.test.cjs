@@ -143,3 +143,13 @@ test('leaving account help cancels late recovery completion without restoring pa
 test('existing active workspace does not bypass verification through account-help fragment',async()=>{
  const {dom,w,state}=fixture('hq','store',{hash:'#account-help'});await settle();assert.equal(w.document.getElementById('accountHelpBack'),null);assert.equal(w.__redirect,'./index.html');assert.ok(!state.calls.some(u=>u.includes('/ops_tickets?')));dom.window.close();
 });
+for(const action of ['signIn','signUp'])test('account-help '+action+' releases spinner when post-auth verification is offline',async()=>{
+ const {dom,w}=fixture('hq','hq',{hash:'#account-help',noSession:true});await settle();const fetch=w.fetch;let offline=true;
+ w.fetch=async(url,opts={})=>{
+  if(url.includes('/auth/v1/token?')||url.endsWith('/auth/v1/signup'))return new Response(JSON.stringify({user:{id:'u'},access_token:'fake-access',refresh_token:'fake-refresh'}),{status:200});
+  if(url.endsWith('/auth/v1/user')&&offline)throw Error('Fictional offline verification');return fetch(url,opts);
+ };
+ w.document.getElementById('email').value='fictional@example.invalid';w.document.getElementById('password').value='fictional-password-only';await w[action]();await settle();
+ assert.match(w.document.getElementById('app').textContent,/Connection unavailable/);assert.ok(!w.document.getElementById('loading').classList.contains('show'));
+ offline=false;w.document.querySelector('#app .primary').click();await settle();assert.ok(w.document.getElementById('app').textContent.includes('Fictional Person'));assert.ok(!w.document.getElementById('loading').classList.contains('show'));dom.window.close();
+});
