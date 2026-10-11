@@ -79,7 +79,7 @@ async def main():
    if role!='admin':
     await page.locator('[data-ticket]').first.click();await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-detail-390.png')),full_page=False);await page.get_by_role('button',name='Close',exact=True).click()
     await page.get_by_role('button',name='Profile',exact=True).click();await page.get_by_role('button',name='Reduce transparency',exact=True).click();assert await page.locator('html').evaluate('(e)=>e.classList.contains("reduce-glass")');assert await page.locator('nav.nav').evaluate('(e)=>getComputedStyle(e).backdropFilter')=='none';await page.get_by_role('button',name='Enable glass',exact=True).click();await page.get_by_role('button',name='Close',exact=True).click()
-   else:await page.get_by_role('button',name='Profile',exact=True).click()
+   await page.get_by_role('button',name='Profile',exact=True).click()
    await page.get_by_role('button',name='Sign out',exact=True).click();await page.wait_for_url('https://reportboss.test/index.html');await expect(page.locator('#choose')).to_be_visible();assert await page.evaluate('!localStorage.getItem("hanokops_session")&&!localStorage.getItem("hanok_store_session")')
    for width in [320,768]:
     await page.set_viewport_size({'width':width,'height':900});assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth')
