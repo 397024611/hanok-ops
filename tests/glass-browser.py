@@ -30,7 +30,10 @@ async def main():
     return await backend.normal(r,r.request,url)
    await page.route('**/*',route)
    await page.goto('https://reportboss.test/index.html')
-   if role=='store':await page.screenshot(path=str(ARTIFACTS/'glass-entry-390.png'),full_page=False)
+   if role=='store':
+    await page.evaluate('scrollTo(0,0)')
+    await page.screenshot(path=str(ARTIFACTS/'glass-entry-390.png'),full_page=False)
+    await page.screenshot(path=str(ARTIFACTS/'glass-entry-full.png'),full_page=True)
    await page.click('[data-entry='+entry+']')
    if role=='admin':
     await page.click('#account-help');await page.wait_for_url('https://reportboss.test/hq.html#account-help');await expect(page.get_by_role('button',name='Forgot password',exact=True)).to_be_visible();await expect(page.get_by_role('button',name='Create account',exact=True)).to_be_visible();await page.screenshot(path=str(ARTIFACTS/'glass-account-help-390.png'));await page.click('#accountHelpBack');await page.wait_for_url('https://reportboss.test/index.html');await page.click('[data-entry=boss]')
@@ -68,6 +71,7 @@ async def main():
    await page.emulate_media(reduced_motion='no-preference')
    if role=='partner':assert await page.locator('.plus').count()==0;assert await page.locator('#assignedStore').count()==1
    if role!='admin':
+    search=await page.locator('#storeTicketSearch').bounding_box();submit=await page.locator('.rb-store-search button').bounding_box();assert abs(search['y']-submit['y'])<2,(search,submit)
     await page.fill('#storeTicketSearch','POS');await page.locator('.rb-store-search button').click();await expect(page.locator('[data-ticket]')).to_have_count(1)
     await page.get_by_role('button',name='Clear search',exact=True).click();await expect(page.locator('[data-ticket]')).to_have_count(3)
    else:

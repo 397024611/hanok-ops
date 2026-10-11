@@ -71,7 +71,7 @@ button, input, textarea, select, a { scroll-margin-block: 24px 120px; }
 .form label { color: var(--muted); font-size: 13px; font-weight: 550; line-height: 1.5; }
 .captureBox textarea { background: transparent; font-size: 16px; line-height: 1.5; }
 .captureHint { font-size: 12px; line-height: 1.5; }
-.searchBox { padding: 0 24px 16px; min-width: 0; }
+.searchBox { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; padding: 0 24px 16px; min-width: 0; }
 .searchBox input { min-width: 0; width: 100%; }
 .searchBox button { min-width: 48px; color: var(--blue); font-size: 14px; }
 .sheet { background: var(--canvas); border-radius: 0; padding: 12px 24px calc(116px + env(safe-area-inset-bottom)); }

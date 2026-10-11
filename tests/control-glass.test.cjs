@@ -44,3 +44,7 @@ test('release metadata remains aligned without changing Android application iden
 test('waiting tickets retain distinct overdue and follow-up dates',()=>{
  const a=store();try{a.w.eval(`tickets[1].due_at='2020-01-01T00:00:00Z';tickets[1].follow_up_at='2030-01-01T00:00:00Z';render()`);const card=a.d.querySelector('[data-ticket=t2]');assert.match(card.querySelector('.ticket-date.overdue').textContent,/Overdue/);assert.match(card.querySelector('.ticket-reference').textContent,/Follow-up/);assert.doesNotMatch(card.querySelector('.ticket-date.overdue').textContent,/2030/);}finally{a.close()}
 });
+
+test('standalone store search is a self-contained two-column control',()=>{
+ const a=store();try{const form=a.d.querySelector('.rb-store-search'),style=a.w.getComputedStyle(form);assert.equal(style.display,'grid');assert.equal(style.gridTemplateColumns,'minmax(0,1fr) auto');assert.equal(style.gap,'8px');}finally{a.close()}
+});
