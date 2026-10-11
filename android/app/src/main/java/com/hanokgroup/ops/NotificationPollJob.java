@@ -41,6 +41,7 @@ public class NotificationPollJob extends JobService {
             try {
                 pollNotifications();
             } catch (Exception ignored) {
+                recordPoll("unexpected_error");
             } finally {
                 jobFinished(params, false);
             }
@@ -53,60 +54,45 @@ public class NotificationPollJob extends JobService {
         return true;
     }
 
+    private void recordPoll(String result) {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit().putString("last_poll_result", result).apply();
+    }
+
     private void pollNotifications() throws Exception {
         SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
-        if (foreground) return;
+        prefs.edit().putLong("last_poll_at", System.currentTimeMillis()).apply();
+        if (foreground) { recordPoll("foreground_skipped"); return; }
+        String blocked = NotificationDelivery.blockedReason(this);
+        if (!blocked.isEmpty()) { recordPoll(blocked); return; }
         String refreshToken = prefs.getString("refresh_token", null);
-        if (refreshToken == null || refreshToken.isEmpty()) return;
+        if (refreshToken == null || refreshToken.isEmpty()) { recordPoll("no_session"); return; }
 
         JSONObject refreshed = refreshSession(refreshToken);
         if (refreshed == null) return;
 
         String accessToken = refreshed.optString("access_token", "");
         String newRefreshToken = refreshed.optString("refresh_token", refreshToken);
-        if (accessToken.isEmpty()) return;
+        if (accessToken.isEmpty()) { recordPoll("invalid_refresh_response"); return; }
 
         // Logout, foreground refresh, or another account may have changed the session.
-        if (!refreshToken.equals(prefs.getString("refresh_token", null))) return;
+        synchronized (NotificationDelivery.class) {
+        if (!refreshToken.equals(prefs.getString("refresh_token", null))) { recordPoll("session_changed"); return; }
         prefs.edit()
                 .putString("access_token", accessToken)
                 .putString("refresh_token", newRefreshToken)
                 .apply();
-
-        JSONArray notifications = getUnreadNotifications(accessToken);
-        if (notifications == null || !newRefreshToken.equals(prefs.getString("refresh_token", null))) return;
-
-        Set<String> seen = new HashSet<>(prefs.getStringSet("notified_ids", Collections.emptySet()));
-        boolean changed = false;
-
-        for (int i = notifications.length() - 1; i >= 0; i--) {
-            JSONObject n = notifications.optJSONObject(i);
-            if (n == null) continue;
-            String id = n.optString("id", "");
-            if (id.isEmpty() || seen.contains(id)) continue;
-
-            showNotification(
-                    n.optString("title", "报告老板"),
-                    n.optString("body", "New operations alert"),
-                    n.optString("ticket_id", "")
-            );
-            seen.add(id);
-            changed = true;
         }
 
-        if (changed) {
-            if (seen.size() > 300) {
-                Set<String> recent = new HashSet<>();
-                for (int i = 0; i < notifications.length(); i++) {
-                    JSONObject n = notifications.optJSONObject(i);
-                    if (n != null) {
-                        String id = n.optString("id", "");
-                        if (!id.isEmpty()) recent.add(id);
-                    }
-                }
-                seen = recent;
+        JSONArray notifications = getUnreadNotifications(accessToken);
+        if (notifications == null) return;
+        if (!newRefreshToken.equals(prefs.getString("refresh_token", null))) { recordPoll("session_changed"); return; }
+
+        synchronized (NotificationDelivery.class) {
+            if (foreground || !newRefreshToken.equals(prefs.getString("refresh_token", null))) {
+                recordPoll("session_or_foreground_changed"); return;
             }
-            prefs.edit().putStringSet("notified_ids", seen).apply();
+            boolean allPosted = NotificationDelivery.postBatchForSession(this, newRefreshToken, notifications);
+            recordPoll(notifications.length() == 0 ? "no_unread_alerts" : allPosted ? "completed" : "delivery_blocked");
         }
     }
 
@@ -129,9 +115,11 @@ public class NotificationPollJob extends JobService {
                 os.write(bytes);
             }
 
-            if (conn.getResponseCode() < 200 || conn.getResponseCode() >= 300) return null;
+            int status = conn.getResponseCode();
+            if (status < 200 || status >= 300) { recordPoll("refresh_http_" + status); return null; }
             return new JSONObject(readAll(conn.getInputStream()));
         } catch (Exception e) {
+            recordPoll("refresh_network_or_parse_error");
             return null;
         } finally {
             if (conn != null) conn.disconnect();
@@ -149,9 +137,11 @@ public class NotificationPollJob extends JobService {
             conn.setRequestProperty("apikey", SB_KEY);
             conn.setRequestProperty("Authorization", "Bearer " + accessToken);
 
-            if (conn.getResponseCode() < 200 || conn.getResponseCode() >= 300) return null;
+            int status = conn.getResponseCode();
+            if (status < 200 || status >= 300) { recordPoll("notifications_http_" + status); return null; }
             return new JSONArray(readAll(conn.getInputStream()));
         } catch (Exception e) {
+            recordPoll("notifications_network_or_parse_error");
             return null;
         } finally {
             if (conn != null) conn.disconnect();
@@ -167,44 +157,4 @@ public class NotificationPollJob extends JobService {
         return sb.toString();
     }
 
-    private void showNotification(String title, String body, String ticketId) {
-        if (Build.VERSION.SDK_INT >= 33 &&
-                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-
-        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "报告老板提醒",
-                    NotificationManager.IMPORTANCE_HIGH
-            );
-            channel.setDescription("Urgent tickets, follow-ups, overdue items and store requests");
-            manager.createNotificationChannel(channel);
-        }
-
-        Notification.Builder builder = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                ? new Notification.Builder(this, CHANNEL_ID)
-                : new Notification.Builder(this);
-
-        Intent launch = new Intent(this, MainActivity.class);
-        launch.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        if (ticketId != null && !ticketId.isEmpty()) launch.putExtra("ticket_id", ticketId);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this,
-                ticketId == null ? 0 : ticketId.hashCode(),
-                launch,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        builder.setSmallIcon(R.drawable.ic_launcher)
-                .setContentIntent(pendingIntent)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new Notification.BigTextStyle().bigText(body))
-                .setAutoCancel(true);
-
-        manager.notify((int) (System.currentTimeMillis() & 0x0fffffff), builder.build());
-    }
 }

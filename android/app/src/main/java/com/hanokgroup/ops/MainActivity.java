@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.ArrayList;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 // Permanent release signing pipeline.
@@ -45,6 +46,7 @@ public class MainActivity extends Activity {
     private static final String CHANNEL_ID = "hanok_ops_alerts";
     private String pendingSharedText;
     private String pendingTicketId;
+    private boolean pendingNotificationInbox;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,8 +146,16 @@ public class MainActivity extends Activity {
 
     private void captureTicketIntent(Intent intent) {
         if (intent == null) return;
+        if (intent.getBooleanExtra("notification_inbox", false)) {
+            pendingNotificationInbox = true;
+            pendingTicketId = null;
+            return;
+        }
         String ticketId = intent.getStringExtra("ticket_id");
-        if (ticketId != null && !ticketId.trim().isEmpty()) pendingTicketId = ticketId.trim();
+        if (ticketId != null && !ticketId.trim().isEmpty()) {
+            pendingTicketId = ticketId.trim();
+            pendingNotificationInbox = false;
+        }
     }
 
     private void captureShareIntent(Intent intent) {
@@ -163,7 +173,13 @@ public class MainActivity extends Activity {
     }
 
     private void deliverPendingTicket() {
-        if (pendingTicketId == null || pendingTicketId.isEmpty() || webView == null) return;
+        if (webView == null) return;
+        if (pendingNotificationInbox) {
+            pendingNotificationInbox = false;
+            webView.evaluateJavascript("window.receiveNotificationInbox && receiveNotificationInbox()", null);
+            return;
+        }
+        if (pendingTicketId == null || pendingTicketId.isEmpty()) return;
         String quoted = JSONObject.quote(pendingTicketId);
         pendingTicketId = null;
         webView.evaluateJavascript("window.receiveNotificationTicket && receiveNotificationTicket(" + quoted + ")", null);
@@ -208,21 +224,26 @@ public class MainActivity extends Activity {
 
     private void saveNativeSession(String accessToken, String refreshToken) {
         if (accessToken == null || refreshToken == null || refreshToken.isEmpty()) return;
+        synchronized (NotificationDelivery.class) {
         getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
                 .edit()
                 .putString("access_token", accessToken)
                 .putString("refresh_token", refreshToken)
                 .apply();
+        }
         scheduleNotificationJob();
     }
 
     private void clearNativeSession() {
+        synchronized (NotificationDelivery.class) {
         getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
                 .edit()
                 .remove("access_token")
                 .remove("refresh_token")
                 .remove("notified_ids")
+                .remove(NotificationDelivery.ACKS)
                 .apply();
+        }
         JobScheduler scheduler = (JobScheduler) getSystemService(JOB_SCHEDULER_SERVICE);
         if (scheduler != null) scheduler.cancel(NotificationPollJob.JOB_ID);
     }
@@ -240,19 +261,24 @@ public class MainActivity extends Activity {
                     .setPeriodic(15 * 60 * 1000L)
                     .setPersisted(true)
                     .build();
-            if (scheduler.schedule(info) != JobScheduler.RESULT_SUCCESS) {
+            int result = scheduler.schedule(info);
+            getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).edit()
+                    .putString("schedule_result", result == JobScheduler.RESULT_SUCCESS ? "scheduled" : "rejected").apply();
+            if (result != JobScheduler.RESULT_SUCCESS) {
                 Log.w("ReportBoss", "Background notification scheduling was rejected");
             }
         } catch (RuntimeException e) {
+            getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).edit().putString("schedule_result", "unavailable").apply();
             Log.w("ReportBoss", "Background notification scheduling is unavailable", e);
         }
     }
 
     private String storedNativeSession() {
-        String access = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
-                .getString("access_token", "");
-        String refresh = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE)
-                .getString("refresh_token", "");
+        String access, refresh;
+        synchronized (NotificationDelivery.class) {
+            access = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).getString("access_token", "");
+            refresh = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).getString("refresh_token", "");
+        }
         try {
             JSONObject out = new JSONObject();
             out.put("access_token", access);
@@ -276,38 +302,72 @@ public class MainActivity extends Activity {
         }
     }
 
-    private void showNotification(String title, String body, String ticketId) {
-        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return;
-        NotificationManager manager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        Notification.Builder builder;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            builder = new Notification.Builder(this, CHANNEL_ID);
-        } else {
-            builder = new Notification.Builder(this);
-        }
-        Intent launch = new Intent(this, MainActivity.class);
-        launch.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        if (ticketId != null && !ticketId.isEmpty()) launch.putExtra("ticket_id", ticketId);
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this,
-                ticketId == null ? 0 : ticketId.hashCode(),
-                launch,
-                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-
-        builder.setSmallIcon(com.hanokgroup.ops.R.drawable.ic_launcher)
-                .setContentIntent(pendingIntent)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(new Notification.BigTextStyle().bigText(body))
-                .setAutoCancel(true);
-        manager.notify((int) (System.currentTimeMillis() & 0x0fffffff), builder.build());
+    private String notificationStatus() {
+        try {
+            android.content.SharedPreferences prefs = getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE);
+            JSONObject out = new JSONObject();
+            String blocked = NotificationDelivery.blockedReason(this);
+            out.put("delivery", blocked.isEmpty() ? "enabled" : blocked);
+            NotificationManager manager = getSystemService(NotificationManager.class);
+            if (Build.VERSION.SDK_INT >= 26 && manager != null) {
+                NotificationChannel channel = manager.getNotificationChannel(CHANNEL_ID);
+                out.put("channelImportance", channel == null ? -1 : channel.getImportance());
+                out.put("channelSound", channel != null && channel.getSound() != null);
+            }
+            JobScheduler scheduler = getSystemService(JobScheduler.class);
+            out.put("jobScheduled", scheduler != null && scheduler.getPendingJob(NotificationPollJob.JOB_ID) != null);
+            out.put("sessionAvailable", !prefs.getString("refresh_token", "").isEmpty());
+            android.os.PowerManager power = getSystemService(android.os.PowerManager.class);
+            if (power != null) {
+                out.put("batterySaver", power.isPowerSaveMode());
+                out.put("deviceIdle", power.isDeviceIdleMode());
+                out.put("batteryOptimizationExempt", power.isIgnoringBatteryOptimizations(getPackageName()));
+            }
+            if (Build.VERSION.SDK_INT >= 28) {
+                android.app.ActivityManager activity = getSystemService(android.app.ActivityManager.class);
+                out.put("backgroundRestricted", activity != null && activity.isBackgroundRestricted());
+                android.app.usage.UsageStatsManager usage = getSystemService(android.app.usage.UsageStatsManager.class);
+                if (usage != null) out.put("standbyBucket", usage.getAppStandbyBucket());
+            }
+            out.put("scheduleResult", prefs.getString("schedule_result", "unknown"));
+            out.put("lastPollAt", prefs.getLong("last_poll_at", 0));
+            out.put("lastPollResult", prefs.getString("last_poll_result", "not_run"));
+            out.put("lastDeliveryResult", prefs.getString("last_delivery_result", "not_attempted"));
+            out.put("lastPostedAt", prefs.getLong("last_posted_at", 0));
+            return out.toString();
+        } catch (Exception error) { return "{}"; }
     }
 
     public class AppBridge {
         @JavascriptInterface
+        public boolean notifyAlerts(String rowsJson, String expectedRefreshToken) {
+            try {
+                return NotificationDelivery.postBatchForSession(MainActivity.this, expectedRefreshToken, new JSONArray(rowsJson));
+            } catch (Exception error) {
+                getSharedPreferences(NotificationPollJob.PREFS, MODE_PRIVATE).edit()
+                        .putString("last_delivery_result", "invalid_batch").apply();
+                return false;
+            }
+        }
+
+        @JavascriptInterface
+        public boolean notifyAlert(String id, String title, String body, String ticketId) {
+            if (id == null || id.isEmpty()) return false;
+            return NotificationDelivery.post(MainActivity.this, id, title, body, ticketId);
+        }
+
+        @JavascriptInterface
+        public String getNotificationStatus() { return notificationStatus(); }
+
+        @JavascriptInterface
+        public boolean testNotification() {
+            return NotificationDelivery.post(MainActivity.this, null, "报告老板通知测试",
+                    "Local notification test. No ticket was created.", "");
+        }
+
+        @JavascriptInterface
         public void notify(String title, String body, String ticketId) {
-            runOnUiThread(() -> showNotification(title, body, ticketId));
+            NotificationDelivery.post(MainActivity.this, null, title, body, ticketId);
         }
 
         @JavascriptInterface
@@ -317,12 +377,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void saveSession(String accessToken, String refreshToken) {
-            runOnUiThread(() -> saveNativeSession(accessToken, refreshToken));
+            saveNativeSession(accessToken, refreshToken);
         }
 
         @JavascriptInterface
         public void clearSession() {
-            runOnUiThread(() -> clearNativeSession());
+            clearNativeSession();
         }
 
         @JavascriptInterface

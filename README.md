@@ -4,7 +4,7 @@ Internal operations system for Hanok Group.
 
 ## Current version
 
-**报告老板 Android App v0.9.1 / code 14 (new-store candidate; not released)**
+**报告老板 Android App v0.9.2 / code 15**
 
 The HQ app is designed around the owner's daily operating workflow rather than a generic task list.
 
@@ -125,4 +125,6 @@ This repository is independent from individual store repositories.
 
 Run `npm ci --ignore-scripts && npm run check && npm test` for mocked client regression checks. With JDK 17 and Android SDK 35 installed, run `cd android && ./gradlew --no-daemon assembleDebug lintDebug`.
 
-The 0.9.1 new-store candidate is not deployed or released, and no signed 0.9.1 APK has been built. The previous 0.9.0 web/backend release and signed APK were verified separately. It preserves the 0.8.4 login-crash fix and approved release identity documented in `docs/ANDROID-SIGNING.md`; the private key is not stored in this repository. The public workflows run offline client regression tests plus Android compilation and lint. Live-service, account, deployment, and real-device validation are separate from this public source candidate. Never distribute a debug APK as a production update.
+Version 0.9.2 improves Android ticket notification delivery and adds a local notification test plus background-job diagnostics under Profile. Background notification checks remain approximately 15-minute Android-scheduled polling; this is not instant FCM push. Permission or channel blocks are retryable rather than permanently consumed, and foreground/background share a submission ledger. A successful native post means Android accepted the notification, not proof of a visible banner or sound. Read the device checks in `docs/NOTIFICATIONS.md`.
+
+The release preserves the approved signing identity documented in `docs/ANDROID-SIGNING.md`. Public workflows validate client regression tests, mocked browser flows, Android compilation and lint; signed release artifacts are produced separately. Physical-device background behavior must be checked on the receiving device. Never distribute a debug APK as a production update.
