@@ -55,6 +55,7 @@ class AccountPortalTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(json.loads(self.backend.calls('POST', '/auth/v1/token')[0][3])['email'], 'staff@example.test')
         await expect(self.page.get_by_role('button', name='Report an issue', exact=True)).to_be_visible()
         await expect(self.page.get_by_label('ASSIGNED STORE', exact=True)).to_have_count(0)
+        await self.page.get_by_role('button', name='Profile', exact=True).click()
         await self.page.get_by_role('button', name='Sign out', exact=True).click()
         await self.page.get_by_role('button', name='Shared store', exact=True).click()
         await self.page.get_by_label('PASSWORD', exact=True).fill('fixture-only')

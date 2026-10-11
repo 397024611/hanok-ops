@@ -8,7 +8,7 @@ test('approved glass assets are packaged consistently for existing web and Andro
   assert.deepEqual(fs.readFileSync(dir+'/assets/glass-background.png'),fs.readFileSync('mobile/assets/glass-background.png'));
   for(const file of fs.readdirSync('mobile/assets/icons'))assert.deepEqual(fs.readFileSync(dir+'/assets/icons/'+file),fs.readFileSync('mobile/assets/icons/'+file));
  }
- const css=fs.readFileSync('mobile/glass.css','utf8');assert.match(css,/prefers-reduced-transparency/);assert.match(css,/prefers-reduced-motion/);assert.match(css,/@supports not\(backdrop-filter/);
+ const css=fs.readFileSync('mobile/glass.css','utf8');assert.match(css,/prefers-reduced-transparency/);assert.match(css,/prefers-reduced-motion/);assert.match(css,/@supports not\s+\(backdrop-filter/);
 });
 test('real entry keeps all sign-in fields and excludes prototype fake roles and sample accounts',()=>{
  const html=fs.readFileSync('mobile/index.html','utf8');

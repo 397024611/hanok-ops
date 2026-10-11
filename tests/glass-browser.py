@@ -30,7 +30,10 @@ async def main():
     return await backend.normal(r,r.request,url)
    await page.route('**/*',route)
    await page.goto('https://reportboss.test/index.html')
-   if role=='store':await page.screenshot(path=str(ARTIFACTS/'glass-entry-390.png'),full_page=False)
+   if role=='store':
+    await page.evaluate('scrollTo(0,0)')
+    await page.screenshot(path=str(ARTIFACTS/'glass-entry-390.png'),full_page=False)
+    await page.screenshot(path=str(ARTIFACTS/'glass-entry-full.png'),full_page=True)
    await page.click('[data-entry='+entry+']')
    if role=='admin':
     await page.click('#account-help');await page.wait_for_url('https://reportboss.test/hq.html#account-help');await expect(page.get_by_role('button',name='Forgot password',exact=True)).to_be_visible();await expect(page.get_by_role('button',name='Create account',exact=True)).to_be_visible();await page.screenshot(path=str(ARTIFACTS/'glass-account-help-390.png'));await page.click('#accountHelpBack');await page.wait_for_url('https://reportboss.test/index.html');await page.click('[data-entry=boss]')
@@ -40,15 +43,47 @@ async def main():
     await page.wait_for_selector('#homeCapture');await page.get_by_role('button',name='Tickets',exact=True).click()
    else:await expect(page.locator('[data-ticket]')).to_have_count(3)
    assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
-   if role!='partner':assert await page.locator('.rb-title-row .primary').evaluate('(e)=>getComputedStyle(e).backgroundColor')=='rgb(9, 100, 255)'
+   assert await page.evaluate('getComputedStyle(document.body).backgroundImage')=='none'
+   assert await page.evaluate('getComputedStyle(document.body).backgroundColor')=='rgb(245, 246, 248)'
+   if role!='partner':
+    assert await page.locator('.rb-title-row .primary').evaluate('(e)=>getComputedStyle(e).color')=='rgb(21, 90, 216)'
+    assert 'gradient' in await page.locator('.rb-title-row .primary').evaluate('(e)=>getComputedStyle(e).backgroundImage')
    await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-tickets-390.png')),full_page=False)
+   # Verify the authenticated layout, not just entry, at small, wide and landscape sizes.
+   for width,height in [(320,844),(375,812),(768,900),(844,390)]:
+    await page.set_viewport_size({'width':width,'height':height})
+    assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth')
+    nav=await page.locator('nav.nav').bounding_box()
+    assert nav and nav['x']>=0 and nav['y']>=0 and nav['x']+nav['width']<=width+1 and nav['y']+nav['height']<=height+1,nav
+    assert await page.locator('nav.nav').evaluate('(e)=>getComputedStyle(e).position')=='fixed'
+    for button in await page.locator('nav.nav button').all():
+     box=await button.bounding_box();assert box['height']>=48 and box['width']>=48,box
+    if height<520:
+     first=page.locator('.rb-ticket').first;last=page.locator('.rb-ticket').last
+     for ticket in [first,last]:
+      await ticket.evaluate('(e)=>e.scrollIntoView({block:"center"})')
+      rect=await ticket.bounding_box();nav=await page.locator('nav.nav').bounding_box()
+      assert rect and rect['y']>=0 and rect['y']+min(rect['height'],100)<=nav['y'],(role,rect,nav)
+    await page.screenshot(path=str(ARTIFACTS/(f'control-{role}-{width}x{height}.png')))
+   await page.set_viewport_size({'width':390,'height':844})
+   await page.emulate_media(reduced_motion='reduce')
+   assert await page.locator('nav.nav button').first.evaluate('(e)=>getComputedStyle(e).transitionDuration')=='0s'
+   await page.emulate_media(reduced_motion='no-preference')
    if role=='partner':assert await page.locator('.plus').count()==0;assert await page.locator('#assignedStore').count()==1
+   if role!='admin':
+    search=await page.locator('#storeTicketSearch').bounding_box();submit=await page.locator('.rb-store-search button').bounding_box();assert abs(search['y']-submit['y'])<2,(search,submit)
+    await page.fill('#storeTicketSearch','POS');await page.locator('.rb-store-search button').click();await expect(page.locator('[data-ticket]')).to_have_count(1)
+    await page.get_by_role('button',name='Clear search',exact=True).click();await expect(page.locator('[data-ticket]')).to_have_count(3)
+   else:
+    await page.select_option('#ticketView','urgent');await expect(page.locator('.rb-ticket')).to_have_count(1)
+    await page.select_option('#ticketView','active');await expect(page.locator('.rb-ticket')).to_have_count(3)
+
    if role=='store':
     await page.get_by_role('button',name='Report an issue',exact=True).click();await expect(page.get_by_role('dialog',name='Report Issue')).to_be_visible();await page.fill('#title','Unsubmitted draft');await page.get_by_role('button',name='Close',exact=True).click();await page.get_by_role('button',name='Report an issue',exact=True).click();assert await page.input_value('#title')=='Unsubmitted draft';await page.get_by_role('button',name='Close',exact=True).click()
    if role!='admin':
     await page.locator('[data-ticket]').first.click();await page.screenshot(path=str(ARTIFACTS/('glass-'+role+'-detail-390.png')),full_page=False);await page.get_by_role('button',name='Close',exact=True).click()
-    await page.get_by_role('button',name='Profile',exact=True).click();await page.get_by_role('button',name='Reduce transparency',exact=True).click();assert await page.locator('html').evaluate('(e)=>e.classList.contains("reduce-glass")');await page.get_by_role('button',name='Enable glass',exact=True).click();await page.get_by_role('button',name='Close',exact=True).click()
-   else:await page.get_by_role('button',name='Profile',exact=True).click()
+    await page.get_by_role('button',name='Profile',exact=True).click();await page.get_by_role('button',name='Reduce transparency',exact=True).click();assert await page.locator('html').evaluate('(e)=>e.classList.contains("reduce-glass")');assert await page.locator('nav.nav').evaluate('(e)=>getComputedStyle(e).backdropFilter')=='none';await page.get_by_role('button',name='Enable glass',exact=True).click();await page.get_by_role('button',name='Close',exact=True).click()
+   await page.get_by_role('button',name='Profile',exact=True).click()
    await page.get_by_role('button',name='Sign out',exact=True).click();await page.wait_for_url('https://reportboss.test/index.html');await expect(page.locator('#choose')).to_be_visible();assert await page.evaluate('!localStorage.getItem("hanokops_session")&&!localStorage.getItem("hanok_store_session")')
    for width in [320,768]:
     await page.set_viewport_size({'width':width,'height':900});assert await page.evaluate('document.documentElement.scrollWidth<=innerWidth')
