@@ -18,7 +18,8 @@ test('Android persisted notification job retains its required service and boot p
 test('Android auxiliary scheduling failure cannot propagate out of login session sync', () => {
   const method = activity.slice(activity.indexOf('    private void scheduleNotificationJob() {'), activity.indexOf('    private String storedNativeSession()'));
   assert.match(method, /try\s*\{[\s\S]*scheduler\.schedule\(info\)[\s\S]*\}\s*catch\s*\(RuntimeException e\)/);
-  assert.match(method, /scheduler\.schedule\(info\) != JobScheduler\.RESULT_SUCCESS/);
+  assert.match(method, /int result = scheduler\.schedule\(info\)/);
+  assert.match(method, /result != JobScheduler\.RESULT_SUCCESS/);
   assert.doesNotMatch(method, /throw\s/);
 });
 

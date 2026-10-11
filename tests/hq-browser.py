@@ -80,6 +80,17 @@ async def main():
   print('PASS: store login cannot enter HQ workspace')
   state['role']='hq';await page.reload();await page.wait_for_selector('#homeCapture');await page.evaluate('newTicket()');assert await page.evaluate('handleAndroidBack()');assert not await page.locator('#detail').evaluate('(e)=>e.classList.contains("show")')
   await page.evaluate('go("tickets")');assert await page.evaluate('handleAndroidBack()');assert await page.locator('#homeCapture').count()==1
+  await page.evaluate('window.testNotificationCalls=0;window.AndroidApp={getVersionName:()=>"0.9.2",testNotification:()=>{window.testNotificationCalls++;return true},getNotificationStatus:()=>JSON.stringify({delivery:"enabled",jobScheduled:true,lastPollResult:"no_unread_alerts"})};go("profile")')
+  before_creates=state['creates'];await page.get_by_text('Send local test notification',exact=True).click()
+  assert await page.evaluate('window.testNotificationCalls')==1
+  assert 'Test submitted to Android' in await page.locator('#notificationDiagnostics').inner_text()
+  assert state['creates']==before_creates
+  await page.get_by_text('Show notification status',exact=True).click()
+  assert 'no_unread_alerts' in await page.locator('#notificationDiagnostics').inner_text()
+  assert await page.evaluate('window.testNotificationCalls')==1
+  assert await page.evaluate('document.documentElement.scrollWidth<=window.innerWidth')
+  await page.evaluate('go("home")')
+  print('PASS: native test/status controls work without creating a ticket; phone layout fits')
   await page.screenshot(path=str(ARTIFACTS/'hq-home.png'),full_page=True)
   print('PASS: Android Back closes dialog, then returns to Today')
   assert not errors,errors
