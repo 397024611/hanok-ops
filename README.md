@@ -4,7 +4,7 @@ Internal operations system for Hanok Group.
 
 ## Current version
 
-**报告老板 Android App v0.10.0 / code 16**
+**报告老板 Android App v0.10.1 / code 17**
 
 The HQ app is designed around the owner's daily operating workflow rather than a generic task list.
 

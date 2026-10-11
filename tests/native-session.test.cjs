@@ -82,10 +82,10 @@ test('native session CAS keeps cross-role refresh/logout from replacing another 
 test('native chrome uses the light neutral surface with API-safe navigation icon contrast',()=>{
  const base=fs.readFileSync('android/app/src/main/res/values/styles.xml','utf8');
  const modern=fs.readFileSync('android/app/src/main/res/values-v27/styles.xml','utf8');
- assert.match(base,/#EEF0F2/);assert.match(base,/android:windowBackground">@color\/app_surface/);
+ assert.match(base,/#F5F6F8/);assert.match(base,/android:windowBackground">@color\/app_surface/);
  assert.match(base,/android:windowLightStatusBar">true/);assert.doesNotMatch(base,/name="android:windowLightNavigationBar"/);
  assert.match(modern,/android:windowLightNavigationBar">true/);assert.match(modern,/android:navigationBarColor">@color\/app_surface/);
- assert.match(activity,/webView\.setBackgroundColor\(0xFFEEF0F2\)/);
+ assert.match(activity,/webView\.setBackgroundColor\(0xFFF5F6F8\)/);
 });
 
  test('account, role and logout transitions clear old posted tray alerts after guarded session mutation', () => {

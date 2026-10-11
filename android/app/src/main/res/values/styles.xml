@@ -1,8 +1,8 @@
 <resources>
     <color name="navy">#071A29</color>
     <color name="gold">#B79253</color>
-    <color name="app_surface">#EEF0F2</color>
-    <color name="app_accent">#43525D</color>
+    <color name="app_surface">#F5F6F8</color>
+    <color name="app_accent">#155AD8</color>
     <color name="app_navigation_legacy">#303941</color>
     <style name="Theme.HanokOps.Base" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>

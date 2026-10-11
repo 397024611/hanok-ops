@@ -272,6 +272,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
             return False
         self.backend.hooks.append(hook)
         await self.page.evaluate("() => {refresh().catch(() => null)}"); await started.wait()
+        await self.page.get_by_role("button", name="Profile", exact=True).click()
         await self.page.get_by_role("button", name="Sign out", exact=True).click(); release.set()
         await self.page.wait_for_timeout(100)
         self.assertIsNone(await self.page.evaluate("session"))
@@ -287,6 +288,7 @@ class PortalTests(unittest.IsolatedAsyncioTestCase):
         self.backend.hooks.append(hook)
         await self.page.evaluate("() => refresh().catch(() => null)")
         self.assertIsNotNone(await self.page.evaluate("session"))
+        await self.page.get_by_role("button", name="Profile", exact=True).click()
         await expect(self.page.get_by_role("button", name="Sign out", exact=True)).to_be_visible()
 
     async def test_progress_refresh_preserves_comment_and_reopen_review(self):

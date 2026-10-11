@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
         captureTicketIntent(getIntent());
 
         webView = new WebView(this);
-        webView.setBackgroundColor(0xFFEEF0F2);
+        webView.setBackgroundColor(0xFFF5F6F8);
         setContentView(webView);
 
         WebSettings s = webView.getSettings();

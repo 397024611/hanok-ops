@@ -1,15 +1,37 @@
-# ReportBoss 0.10.0 glass integration design QA
+# ReportBoss 0.10.1 control-glass candidate — design QA
 
-final result: passed for browser visual acceptance
+Status: local regression checks passed; browser and physical-device acceptance are pending. This document does not certify the previous 0.10.0 screenshots as evidence for this candidate.
 
-Reference: approved silver-white glass ticket screen and interactive design preview. Integration reuses only its background and Radix icon assets with the existing authenticated workspaces.
+## Visual target
 
-Verified source candidate: `049f6dc34a4b7f2745f6c12eb8da9dc64d47bfb7`. [Full validation and screenshot artifact](https://github.com/397024611/hanok-ops/actions/runs/38140001591) and [isolated account integration](https://github.com/397024611/hanok-ops/actions/runs/38140001599) passed. All six browser suites and Android debug build/lint passed. Local syntax and 227 automated tests passed.
+Approved direction: flat cool-white canvas (#F5F6F8), dark readable typography, frosted pill buttons and segmented filters, floating navigation, compact ticket rows and restrained blue selection. Glass is confined to controls. Content surfaces, backgrounds and detail pages are opaque or flat. No background texture, refraction or blue light field is applied.
 
-Actual generated entry, account help, HQ, staff, partner and ticket-detail pages were captured at 390 × 844 in CI using fixture-only API responses. Entry and ticket screenshots were inspected against the approved reference. The integration has neutral silver-white glass, charcoal typography, primary/selected blue, urgency grouping and red urgent indicators, readable controls, and a reduced-transparency preference. Staff/partner rows were tightened and duplicate header information removed after review; timestamps align with row status. No blocking clipping, overlap or unintended role controls remained in the inspected screens. Narrow/wide overflow assertions also passed.
+The implementation stays within the existing HTML/JavaScript WebView app. It does not embed prototype business logic, sample data or preview accounts.
 
-The HQ screen intentionally retains its additional navigation, search, Projects and operations tools. Native file inputs and real ticket metadata are retained. Browser fixtures validate rendering and transitions; they are not embedded demo accounts or production data. Screenshots and logs are in the CI `mocked-browser-glass` artifact.
+## Preserved functionality
 
-Auth/session and native changes received independent review. Replacement-owner logout, BFCache refresh/access reset, stale boot publication and offline account-help retry regressions were fixed and covered by tests.
+- Boss/Staff entry; actual account role and store scope determine access.
+- HQ Today, Tickets, Stores, Projects and Inbox; all seven existing ticket views remain in the view selector. Active, Waiting and Done have primary segmented controls.
+- Existing sign-in, account creation, recovery and help; shared-store login compatibility.
+- Real ticket creation, comments, attachments, status transitions, ownership, follow-up, reopen, local projects and recoverable drafts.
+- Session replacement/CAS, BFCache access refresh, stale-response guards, Android origin, application identity, update entry and notifications.
+- Partners retain view/comment/photo access without report/status controls. Search in staff/partner views is client-side and scoped to already authorized tickets; scope changes clear it.
 
-Device limitations: physical Android status/navigation bars, keyboard/safe areas, file chooser, upgrade without uninstall, real token rotation and background notification timing were not physically tested. These remain device acceptance checks; browser/Gradle results must not be represented as device verification. Signed release distribution additionally requires pinned certificate, application ID, version, non-debuggable, zip alignment and embedded-asset verification.
+## Local checks
+
+- JavaScript syntax and generated mobile bundle: passed.
+- Automated suite: 237 tests passed, no failures or skips (227 existing plus 10 control-glass regressions).
+- Independent source/DOM review: addressed shared-nav positioning/layering, standalone-login contrast, due/follow-up meaning, store-search reset, reduced-transparency fallback grammar and empty-state contrast.
+- Native Java source compilation against Android API 35: passed using generated version constants and existing resource classes. This is not a Gradle APK build.
+- Focused Android lint (API use, JavaScript interfaces and exported service): no issues found. Full Gradle assemble/lint remains pending.
+- Text-token contrast: primary/canvas 14.54:1, secondary/canvas 5.18:1, urgency/canvas 5.75:1, blue/opaque control fallback 5.21:1.
+
+## Browser gate prepared but not run locally
+
+The fixture-only browser suite now checks generated entry, HQ, staff and partner screens; flat backgrounds; frosted primary actions; 320/375/390/768 widths and 844×390 landscape; floating navigation bounds; first/last ticket access in short landscape; reduced motion/transparency; local search; all ticket views; draft reopen; logout and account-help flows. Existing account, store, HQ and session browser suites remain required.
+
+The local Chromium route is restricted and was not retried. Actual generated screenshots must be captured and inspected through the approved CI route before visual acceptance. Publication of this candidate, deployment and release require separate authorization.
+
+## Physical-device gate
+
+Still unverified: upgrading over 0.10.0 without uninstalling, Android status/navigation bars, keyboard and file chooser, large system text, orientation on a device, token rotation, actual server roles and background notification scheduling. A signed release additionally requires exact version, package, certificate, non-debuggable flag, ZIP alignment and embedded-asset checks.
